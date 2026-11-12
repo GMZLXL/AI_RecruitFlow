@@ -20,3 +20,8 @@ playwright-report/
 test-results/
 *.db-*
 *.sqlite-*
+.secrets/
+deploy/secrets/
+deploy/production.env
+*.pem
+*.key

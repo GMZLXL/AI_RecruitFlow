@@ -2,7 +2,7 @@
 
 招聘记录自动化系统：React/TypeScript/Vite/Ant Design + FastAPI/Pydantic/SQLAlchemy。先运行不需要任何 Key 的 Mock，再按 S1~S7 完成业务和授权接入。
 
-**当前为 S5**：在S4七页工作台和虚构样本基础上，新增企微自建应用验签/AES回调、持久异步接收、消息去重、应用通知和可配置提醒。无Key默认Mock，界面区分模拟发送、平台接受和结果不明；真实DeepSeek/MCP/企微尚未联调，生产/live模式仍拒绝启动。
+**当前为 S6**：新增系统设置中的 AI Key/模型管理、后端加密存储、生产 SSO 会话校验与 CSRF、限流和安全日志、后台任务单实例租约、健康状态、Compose 与备份恢复工具。无Key默认Mock；真实 DeepSeek/MCP/企微及企业登录网关尚未联调，完整 live 模式仍拒绝启动。
 
 ## 工作区
 
@@ -80,6 +80,8 @@ npm run db:check           # 模型与迁移漂移检查
 npm run integrations:tencent:discover # 只读工具发现；缺Token退出2，不会调用业务工具
 npm run smoke:workbench   # 服务启动、demo:seed后验证Offer/看板/权限，保留1条虚构申请
 npm run smoke:wecom       # 无Key企微接收→异步AI处理→模拟通知；保留1条虚构申请
+npm run smoke:security    # 隔离库/合成签名会话的生产模式Mock验证，不调用真实SSO
+npm run deploy:config     # 官方Compose配置校验，需要Docker Compose或本机standalone
 npm run test:api          # pytest
 npm run test:web          # Vitest组件/路由/错误/日期测试
 ```
@@ -101,6 +103,8 @@ Unix改用`.venv/bin/python`。命令保留原库和备份，目标文件必须�
 
 ## 当前验证边界
 
+S6 当前契约为 OpenAPI 0.7.0 / 41 路径，迁移 `0006_s6`。完整检查：后端202、前端19项通过，失败0、跳过0；类型、lint、契约与构建通过。生产模式合成SSO的HTTP检查、现有Mock/企微HTTP链路通过；实际SQLite在线备份与新文件恢复校验通过。两套Compose配置已由官方Compose校验，但本机无Docker Engine，未构建镜像或启动容器；真实企业网关/TLS、PostgreSQL、Linux/macOS未实机验收。保留测试客户端弃用及537.92KB主包警告。以下S5及更早数据为历史记录。
+
 S5统一OpenAPI为0.6.0/37路径；新增0005_s5（接收任务、通知、防重放、提醒规则，扩展reminders关联）。本机已先停止API并将SQLite备份到忽略的.tools/backups，再执行db:upgrade/db:check；旧业务记录保留。升级已有工作区也需先停止API并备份，重新安装requirements.lock后迁移、启动。最终完整check通过：后端168项、前端16项，失败0/跳过0；S5多尺寸设置/投稿/实际409恢复及授权边界见实施报告。
 
 S4后端132项、前端12项回归通过；HTTP包括AI全链路及独立Offer/人工录用、筛选、历史和权限。浏览器检查七页、1440/1024/390px布局，并实际完成390px姓名消息审核、Offer反馈、跨部门403及负责人只读。生产构建预览的3个图表实际渲染，控制台无错误；不将此当成真实生产身份/第三方验收。PostgreSQL仅DDL离线编译，Linux/macOS未实机运行；保留1条测试客户端警告和535KB主分包警告。
@@ -113,7 +117,7 @@ S2迁移为0002_s2，现有S1库运行`npm run db:upgrade`即可；启动自动�
 
 ## DeepSeek 配置与边界
 
-默认`APP_MODE=mock`、`AI_PROVIDER=mock`，无任何外部调用。测试真实模型只在后端`.env`设置`APP_MODE=hybrid`、`AI_PROVIDER=deepseek`、`DEEPSEEK_API_KEY`及`DEEPSEEK_MODEL`；模型名不写死，仅允许官方HTTPS地址。其它连接器未显式启用时保持模拟；生产认证尚未实现。
+默认`APP_MODE=mock`、`AI_PROVIDER=mock`，无任何外部调用。推荐管理员通过系统设置填写Key和模型；服务端显式设`APP_MODE=hybrid`后页面才允许启用DeepSeek。环境变量仍可作初始回退，受管配置优先；仅使用官方HTTPS地址。生产会话校验已实现，真实企业登录网关仍待接入。
 
 DeepSeek使用JSON Output与Pydantic，最多2次尝试；空白、截断、非法字段、超时、缺凭证转人工确认。手机号/邮箱/身份证/常见联系信息先脱敏；只保留哈希和不超过300字的脱敏摘要，不保存独立原文或模型原始响应。解析在数据库事务之外，落地前重新校验权限、状态和版本。未提供Key时显示blocked_by_credentials，不用Mock响应冒充真实调用。
 
@@ -129,7 +133,22 @@ Mock支持明确新增、唯一编号的阶段/面试结果、ISO时间及“明
 
 提醒默认关闭，按面试提前/反馈超时/停滞/同步故障生成同事实一次的通知；事实或权限变化时取消。配置保存有确认，冲突可刷新服务端版本并保留草稿，对照后重提。通知区分模拟发送、平台接受、待配置、明确失败、结果不明和已取消，不把accepted当已读；结果不明不能直接重发。
 
-真实测试需管理员提供CorpID、AgentID、Secret、回调Token及EncodingAESKey，只写服务端环境。APP_MODE=hybrid、WECOM_PROVIDER=wecom后，接收/发送开关分别显式开启。当前无真实凭证/公网校验，最多显示configured_not_verified；仅限隔离授权测试，生产身份/部署在S6。见[接入手册](docs/08-第三方系统接入手册.md)。
+真实测试需管理员提供CorpID、AgentID、Secret、回调Token及EncodingAESKey，只写服务端环境。APP_MODE=hybrid、WECOM_PROVIDER=wecom后，接收/发送开关分别显式开启。当前无真实凭证/公网校验，最多显示configured_not_verified；先在隔离授权环境验收。生产身份及部署边界见S6手册，企微步骤见[接入手册](docs/08-第三方系统接入手册.md)。
+
+## AI配置与安全运维（S6）
+
+管理员打开[系统设置](http://127.0.0.1:5173/settings) → AI接入配置，填写模型和DeepSeek API Key并保存。Key留空表示保留；勾选清除会同时禁用环境Key回退，需保持Mock。页面不回显已存Key、不写浏览器存储，后端AES-GCM加密保存；保存成功只说明配置写入，不代表真实连通性通过。默认Mock可先保存，开启真实调用需服务器允许hybrid，再在页面选择DeepSeek。后续请求读取最新配置，无需为更换Key重启服务。
+
+开发首次启动会在忽略的`backend/.secrets/ai-master.key`生成加密主密钥；备份数据库时须另行安全备份此文件。生产由`APP_SECRET_KEY_FILE`提供主密钥，禁止自动生成。只有加密数据库、没有原主密钥无法恢复Key。
+
+```powershell
+# 文件路径相对于backend；按自己的实际DATABASE_URL选择源文件，目标必须不存在
+npm run ops:backup -- --source recruitflow.db --destination ../.tools/backups/manual-01.db
+npm run ops:restore -- --source ../.tools/backups/manual-01.db --destination ../.tools/backups/restored-01.db
+npm run deploy:config
+```
+
+Compose默认只在本机8080暴露Mock页面。真实服务器部署需HTTPS/SSO网关、显式用户授权及secret文件；生产拒绝开发身份头，前端显示企业登录入口。具体网关会话协议、Compose命令、用户授权/撤销、监控和恢复切换步骤见[安全部署与恢复手册](docs/15-安全部署与恢复手册.md)。本阶段未操作真实账号或对外发送消息。
 
 GET验签解密echo，POST持久化后ACK，后台复用现有AI/审核/权限链路；timestamp/nonce/MsgId防重复。仅处理主动发给自建应用的文本，不监听普通群聊。成功即清理脱敏工作文本；网络调用在事务外，提醒和通知持久化并审计。单实例运行，WECOM_WORKER_ENABLED=false暂停处理但保留队列。
 

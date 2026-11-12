@@ -19,5 +19,6 @@ class UserRead(EntityRead):
 
 class Identity(Schema):
     user: UserRead
-    mode: Literal["mock"] = "mock"
-    authentication: Literal["development_only"] = "development_only"
+    mode: Literal["mock", "hybrid"] = "mock"
+    authentication: Literal["development_only", "sso_cookie"] = "development_only"
+    csrf_token: str | None = None

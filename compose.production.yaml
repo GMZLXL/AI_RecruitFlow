@@ -1,0 +1,25 @@
+# Requires an external HTTPS/SSO gateway; this override does not implement a corporate IdP.
+services:
+  api:
+    environment:
+      APP_ENV: production
+      APP_MODE: hybrid
+      AUTH_MODE: sso
+      DEV_AUTH_ENABLED: "false"
+      DEV_PROXY_NETWORKS: ""
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Set HTTPS public origin}
+      ALLOWED_ORIGINS: ${APP_PUBLIC_URL:?Set HTTPS public origin}
+      SSO_ISSUER: ${SSO_ISSUER:?Set trusted issuer}
+      SSO_AUDIENCE: ${SSO_AUDIENCE:?Set exact session audience}
+      SSO_PUBLIC_KEY_FILE: /run/secrets/sso_public_key
+      SSO_LOGIN_PATH: /sso/login
+      SSO_LOGOUT_PATH: /sso/logout
+      SESSION_CSRF_SECRET_FILE: /run/secrets/csrf_key
+      APP_SECRET_KEY_FILE: /run/secrets/app_key
+    secrets: [sso_public_key, csrf_key, app_key]
+    healthcheck:
+      test: [CMD, python, -m, scripts.operations.healthcheck]
+secrets:
+  sso_public_key: {file: "${SSO_PUBLIC_KEY_PATH:-./deploy/secrets/sso-public.pem}"}
+  csrf_key: {file: "${CSRF_KEY_PATH:-./deploy/secrets/csrf.key}"}
+  app_key: {file: "${APP_KEY_PATH:-./deploy/secrets/app.key}"}

@@ -24,6 +24,7 @@ const show = (node: React.ReactNode, route = '/') => render(<MemoryRouter initia
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(api.authConfig).mockResolvedValue({ authentication: 'development_only', mode: 'mock', login_url: null, logout_url: null });
   vi.mocked(api.options).mockResolvedValue({ positions: [], owners: [], limit: 100 });
   vi.mocked(api.confirmations).mockResolvedValue(list([]));
 });

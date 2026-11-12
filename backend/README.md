@@ -1,5 +1,7 @@
 # 后端服务（开发 Mock）
 
+当前S6：新增0006_s6、RS256网关Cookie/DB授权/CSRF、请求限流/安全日志、AI配置加密、任务领导租约/健康、操作员与SQLite备份恢复脚本。真实SSO网关和外部连接器未联调，完整live拒绝。安装最新requirements.lock并备份后迁移；202项后端回归通过。API/TS契约已同步，实际运行与生产前置条件见根README及docs/15，以下保留阶段历史。
+
 S5新增0005_s5、schemas/wecom、验签/AES适配器、持久接收与通知/提醒队列、配置与用户绑定API。SDK/密码库已锁定，安装requirements.lock后迁移；无Key保持Mock，真实企微未联调，生产身份仍待S6。`npm run smoke:wecom`验证后台闭环，不发送外部消息。
 
 当前S4：新增独立offers、工作台聚合统计/安全历史/待办投影/岗位负责人选项与规则读取。0004_s4迁移已验证；前后端契约源不变。根npm run demo:seed生成24条明确标记的虚构申请；npm run smoke:workbench验证Offer与录用分离及权限。详情见根README和实施报告，下方保留基础运行方法。

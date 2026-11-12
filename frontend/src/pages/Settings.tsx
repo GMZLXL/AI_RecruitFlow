@@ -6,6 +6,7 @@ import { ErrorState, LoadState } from '../components/RemoteState';
 import PageHead from '../components/PageHead';
 import { STAGES } from '../features/recruitment/presentation';
 import WecomPanel from '../features/wecom/WecomPanel';
+import AISettingsPanel from '../features/settings/AISettingsPanel';
 
 export default function Settings({ identity }: { identity: User }) {
   const admin = identity.role === 'ADMIN';
@@ -26,7 +27,7 @@ export default function Settings({ identity }: { identity: User }) {
     catch (cause) { setError(errorMessage(cause, '岗位创建失败，请重试')); }
     finally { setBusy(false); }
   };
-  return <><PageHead title="系统设置" desc="查看权限、岗位、阶段和连接状态。凭证只在服务端配置，页面不接收或回显密钥。" />
+  return <><PageHead title="系统设置" desc="管理AI接入、权限、岗位和提醒。AI Key通过安全表单提交并在后端加密保存，已保存密钥不回显。" />
     <Card title="当前权限与业务规则">
       <Descriptions column={{ xs: 1, md: 2 }} items={[
         { key: 'user', label: '当前身份', children: `${identity.display_name} · ${identity.role}` },
@@ -47,6 +48,7 @@ export default function Settings({ identity }: { identity: User }) {
         ]} /><Alert type="warning" showIcon message="刷新只读取配置状态，不代表真实连通性验证通过。尚无经验证的腾讯字段映射；本页面不编造字段ID。" />
       </>}
     </Card>}
+    {admin && <AISettingsPanel onSaved={connections.reload} />}
     {admin && <WecomPanel />}
     <Card className="section-card" title="岗位字典" extra={<Button onClick={positions.reload}>刷新岗位</Button>}>
       {positions.error && <ErrorState error={positions.error} retry={positions.reload} />}

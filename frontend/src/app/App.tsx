@@ -17,11 +17,16 @@ const { Header, Sider, Content } = Layout;
 export default function App() {
   const loc = useLocation(); const nav = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const config = useResource(useCallback((signal: AbortSignal) => api.authConfig(signal), []));
   const auth = useResource(useCallback(async () => {
-    const [identity, users] = await Promise.all([api.me(), api.devUsers()]);
+    if (!config.data) return null;
+    const identity = await api.me();
+    const users = identity.authentication === 'development_only' ? await api.devUsers() : [];
     return { identity: identity.user, users };
-  }, []));
+  }, [config.data]));
   const identity = auth.data?.identity;
+  const dev = config.data?.authentication === 'development_only';
+  const error = config.error || auth.error;
   const canWrite = identity?.role === 'HR' || identity?.role === 'ADMIN';
   const isAdmin = identity?.role === 'ADMIN';
   const items = [
@@ -36,14 +41,15 @@ export default function App() {
     <Layout className="app-main">
       <Header className="topbar"><Space wrap>
         <Button className="mobile-nav-toggle" onClick={() => setMenuOpen(true)} aria-label="打开导航">导航</Button>
-        <Typography.Text strong>AI 招聘自动化</Typography.Text><Tag color="gold">MOCK · 开发模拟身份</Tag>
+        <Typography.Text strong>AI 招聘自动化</Typography.Text><Tag color={dev ? 'gold' : 'blue'}>{config.data ? `${config.data.mode === 'hybrid' ? '混合接入' : 'MOCK'} · ${dev ? '开发模拟身份' : '企业身份'}` : '正在确认身份'}</Tag>
       </Space><Space wrap>
-        <Select aria-label="开发模拟身份" value={identity?.id} className="identity-select" loading={auth.loading}
-          options={auth.data?.users.map(user => ({ value: user.id, label: `${user.display_name} · ${user.role}` }))} onChange={api.selectDevUser} />
+        {dev ? <Select aria-label="开发模拟身份" value={identity?.id} className="identity-select" loading={auth.loading}
+          options={auth.data?.users.map(user => ({ value: user.id, label: `${user.display_name} · ${user.role}` }))} onChange={api.selectDevUser} /> : identity && <Typography.Text>{identity.display_name} · {identity.role}</Typography.Text>}
+        {!dev && identity && config.data?.logout_url && <a href={config.data.logout_url}>退出企业登录</a>}
         <Link to="/settings">连接设置</Link>
       </Space></Header>
       <Content className="app-content">
-        {auth.error ? <><ErrorState error={auth.error} retry={auth.reload} /><Button className="section-card" onClick={() => { sessionStorage.removeItem('recruitflow.dev_user'); window.location.reload(); }}>恢复默认开发身份</Button></>
+        {error ? <><ErrorState error={error} retry={config.error ? config.reload : auth.reload} />{dev && <Button className="section-card" onClick={() => { sessionStorage.removeItem('recruitflow.dev_user'); window.location.reload(); }}>恢复默认开发身份</Button>}{config.data?.login_url && <Button className="section-card" type="primary" href={config.data.login_url}>企业登录</Button>}</>
           : !identity ? <LoadState /> : <AppErrorBoundary key={loc.pathname}><Suspense fallback={<LoadState />}><Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard />} />
             <Route path="/candidates" element={<Candidates canWrite={canWrite} />} /><Route path="/applications" element={<Navigate to="/candidates" replace />} />

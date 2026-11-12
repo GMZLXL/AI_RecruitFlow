@@ -1,7 +1,9 @@
 from .base import Base, UTCDateTime, new_id, utcnow
 from .models import (
+    AISettings,
     Application,
     AuditLog,
+    AuthIdentity,
     Candidate,
     Confirmation,
     Event,
@@ -20,10 +22,13 @@ from .models import (
     User,
     WecomInbox,
     WecomReplay,
+    WorkerState,
 )
 from .session import DATABASE_URL, SCHEMA_REVISION, SessionLocal, engine, get_db, init_db
 
 __all__ = [
+    "AISettings",
+    "AuthIdentity", "WorkerState",
     "Notification", "ReminderPolicy", "WecomInbox", "WecomReplay",
     "Base",
     "Offer",

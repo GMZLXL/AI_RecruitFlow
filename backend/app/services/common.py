@@ -114,7 +114,7 @@ def application_read(obj: Application) -> s.ApplicationRead:
 def snapshot(obj) -> dict:
     data = {}
     for attribute in inspect(type(obj)).column_attrs:
-        if attribute.key in {"contact_encrypted", "safe_text", "text", "processing_token"}:
+        if attribute.key in {"contact_encrypted", "safe_text", "text", "processing_token", "api_key_ciphertext"}:
             continue
         value = getattr(obj, attribute.key)
         data[attribute.key] = (

@@ -8,6 +8,7 @@ from .ai import (
     ResolveRequest,
     ScheduleProposal,
 )
+from .ai_settings import AISettingsRead, AISettingsUpdate
 from .common import (
     ApiError,
     CustomFields,
@@ -33,6 +34,7 @@ from .integration import (
     SyncRun,
     SyncSummary,
 )
+from .operations import AuthConfig, OpsStatus, WorkerHealth
 from .recruitment import (
     ApplicationCreate,
     ApplicationMutation,
@@ -75,6 +77,8 @@ from .workbench import (
 )
 
 __all__ = [
+    "AISettingsRead", "AISettingsUpdate",
+    "AuthConfig", "OpsStatus", "WorkerHealth",
     "InboxRead", "MockMessage", "NotificationRead", "ReminderPolicyRead", "ReminderPolicyUpdate",
     "TaskRetry", "WecomBinding", "WecomStatus", "WecomUser",
     "OfferCreate", "OfferPatch", "OfferRead", "RecruitmentOptions", "TaskRead", "TaskKind",

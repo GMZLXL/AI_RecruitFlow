@@ -1,4 +1,4 @@
-import { client } from './client';
+import { client, configureAuthentication, configureCsrf } from './client';
 export { errorMessage } from './client';
 import type { components, operations } from '../types/api.generated';
 
@@ -27,6 +27,8 @@ export type DashboardData = Schemas['DashboardData'];
 export type IngestResult = Schemas['IngestionResult'];
 export type Pagination = Schemas['Pagination'];
 export type User = Schemas['UserRead'];
+export type AISettings = Schemas['AISettingsRead'];
+export type AISettingsUpdate = Schemas['AISettingsUpdate'];
 export type Notification = Schemas['NotificationRead'];
 export type Inbox = Schemas['InboxRead'];
 export type ReminderPolicy = Schemas['ReminderPolicyRead'];
@@ -66,6 +68,9 @@ type PolicyResponse = operations['settings_policy_api_v1_settings_policy_get']['
 type IntegrationsResponse = operations['integration_status_api_v1_integrations_status_get']['responses'][200]['content']['application/json'];
 
 export const api = {
+  authConfig: async (signal?: AbortSignal) => { const config = (await client.get<Schemas['Response_AuthConfig_']>('/auth/config', { signal })).data.data; configureAuthentication(config.authentication); return config; },
+  aiSettings: async (signal?: AbortSignal) => (await client.get<Schemas['Response_AISettingsRead_']>('/settings/ai', { signal })).data.data,
+  updateAISettings: async (row: AISettings, data: AISettingsUpdate, key: string) => (await client.patch<Schemas['Response_AISettingsRead_']>('/settings/ai', data, { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
   wecomStatus: async (signal?: AbortSignal) => (await client.get<Schemas['Response_WecomStatus_']>('/wecom/status', { signal })).data.data,
   reminderPolicy: async (signal?: AbortSignal) => (await client.get<Schemas['Response_ReminderPolicyRead_']>('/settings/reminders', { signal })).data.data,
   updateReminderPolicy: async (row: ReminderPolicy, data: ReminderPolicyUpdate, key: string) => (await client.patch<Schemas['Response_ReminderPolicyRead_']>('/settings/reminders', data, { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
@@ -76,7 +81,7 @@ export const api = {
   notifications: async (page = 1, signal?: AbortSignal) => (await client.get<Schemas['ListResponse_NotificationRead_']>('/notifications', { params: { page, page_size: 8 }, signal })).data,
   retryNotification: async (row: Notification, change_reason: string, key: string) => (await client.post<Schemas['Response_NotificationRead_']>(`/notifications/${row.id}/retry`, { change_reason } satisfies Schemas['TaskRetry'], { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
   retryInbox: async (row: Inbox, change_reason: string, key: string) => (await client.post<Schemas['Response_InboxRead_']>(`/wecom/inbox/${row.id}/retry`, { change_reason } satisfies Schemas['TaskRetry'], { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
-  me: async () => (await client.get<MeResponse>('/me')).data.data,
+  me: async () => { const identity = (await client.get<MeResponse>('/me')).data.data; configureCsrf(identity.csrf_token ?? null); return identity; },
   devUsers: async () => (await client.get<UsersResponse>('/dev/users')).data.data,
   selectDevUser: (id: string) => { sessionStorage.setItem('recruitflow.dev_user', id); window.location.reload(); },
   applications: async (page = 1, page_size = 8, keyword = '', filters: ApplicationFilters = {}, signal?: AbortSignal) =>

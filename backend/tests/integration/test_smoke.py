@@ -203,7 +203,7 @@ def test_unsafe_modes_refuse_startup(env):
         cwd=Path(__file__).resolve().parents[2],
     )
     assert result.returncode != 0
-    assert "only supports" in result.stderr
+    assert ("Production requires" if env.get("APP_ENV") == "production" else "Live mode requires") in result.stderr
 
 
 def test_openapi_is_the_implemented_contract(client):

@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from app.integrations.wecom.config import enabled
+from app.jobs.runtime import record_cycle
 from app.services.notifications import generate_reminders, process_notification
 from app.services.wecom import process_inbox
 
@@ -24,7 +25,9 @@ async def wecom_loop(wakeup: asyncio.Event):
             for _ in range(20):
                 if not await process_notification():
                     break
+            record_cycle("wecom", True)
         except Exception:
+            record_cycle("wecom", False)
             logging.getLogger(__name__).error("wecom_worker_cycle_failed")
         try:
             await asyncio.wait_for(wakeup.wait(), timeout=2)

@@ -28,6 +28,34 @@ class User(Entity, Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class AISettings(Entity, Base):
+    __tablename__ = "ai_settings"
+    provider: Mapped[str | None] = mapped_column(String(20))
+    model: Mapped[str | None] = mapped_column(String(120))
+    api_key_ciphertext: Mapped[str | None] = mapped_column(Text)
+    key_override: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class AuthIdentity(Entity, Base):
+    __tablename__ = "auth_identities"
+    __table_args__ = (UniqueConstraint("issuer", "subject", name="uq_auth_issuer_subject"),)
+    issuer: Mapped[str] = mapped_column(String(500))
+    subject: Mapped[str] = mapped_column(String(150))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class WorkerState(Base):
+    __tablename__ = "worker_states"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    owner_token: Mapped[str | None] = mapped_column(String(36))
+    expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    heartbeat_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_cycle_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_success_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    last_error: Mapped[str | None] = mapped_column(String(80))
+
+
 class Position(Entity, Base):
     __tablename__ = "positions"
     __table_args__ = (CheckConstraint("target_headcount >= 0", name="ck_position_headcount"),)

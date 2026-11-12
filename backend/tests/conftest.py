@@ -12,6 +12,7 @@ os.environ["APP_MODE"] = "mock"
 os.environ["APP_ENV"] = "development"
 os.environ["SYNC_WORKER_ENABLED"] = "false"
 os.environ["WECOM_WORKER_ENABLED"] = "false"
+os.environ["AUTH_MODE"] = "dev"
 
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -43,6 +44,13 @@ def client():
 
 @pytest.fixture(autouse=True)
 def isolated_parser_config(monkeypatch):
+    import base64
+
+    monkeypatch.setenv("APP_SECRET_KEY", base64.urlsafe_b64encode(bytes(range(32))).decode())
+    monkeypatch.setenv("AUTH_MODE", "dev")
+    monkeypatch.setenv("DEV_AUTH_ENABLED", "true")
+    monkeypatch.setenv("RATE_LIMIT_ENABLED", "true")
+    monkeypatch.delenv("DEV_PROXY_NETWORKS", raising=False)
     monkeypatch.setenv("WECOM_PROVIDER", "mock")
     monkeypatch.setenv("WECOM_CALLBACK_ENABLED", "false")
     monkeypatch.setenv("WECOM_SEND_ENABLED", "false")

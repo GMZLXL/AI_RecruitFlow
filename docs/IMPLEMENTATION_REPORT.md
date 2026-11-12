@@ -1,5 +1,49 @@
 # AI RecruitFlow 实施报告
 
+## S6 实际交付（2026-11-12）
+
+```text
+阶段：S6
+已完成：生产会话验证/DB角色/CSRF、失败关闭配置、环境与文件secret、AI前端配置及后端加密、限流/脱敏日志、领导租约/健康可观察性、Compose及备份恢复/用户授权工具与手册。
+本阶段变更文件：schemas/ai_settings与operations/identity、OpenAPI0.7.0/41路径及TS；0006_s6/models；core安全模块、jobs/runtime、services/ai_settings、api/v1/operations及main；前端App/Settings/AISettingsPanel/client/api及组件测试；admin/operations/smoke脚本；部署/依赖锁与docs04~15、README/状态/设计事实。
+数据库迁移：0006_s6新增auth_identities、ai_settings、worker_states；本机一致备份旧0005_s5库后升级，db:check无漂移；在线备份与新文件恢复演练通过，原库未覆盖。
+运行的命令：contracts:generate/check、npm run check、db:upgrade/db:check、smoke:security/http/wecom、ops:backup/restore、deploy:config及生产覆盖config；Ruff/类型与compileall补检；1440/1024/390px浏览器验收及独立UI评审。
+测试结果：后端202通过（36.84s）、前端19通过/5文件（41.26s）、失败0、跳过0；契约/lint/Python及TS类型通过，build通过（19.27s）。S6安全/运维targeted34项通过；新增安全HTTP冒烟通过；官方Compose两配置解析通过。
+未完成/阻塞：无Docker Engine，未构建镜像/启动容器或运行Nginx；真实企业SSO网关/OAuth/TLS、DeepSeek Key、腾讯MCP工具Schema与写入、企微租户授权未联调；PostgreSQL与Linux/macOS未实机验收。
+重要风险：单进程内存限流/单实例SQLite；备份必须同时保护匹配的加密主密钥；网关需正确签发应用Cookie并脱敏日志，JWT最长1小时且无逐jti撤销；保留测试客户端弃用及537.92KB主包警告。未宣称可直接上线。
+下一阶段：S7（端到端验收与交付），本轮不提前实施。
+```
+
+### 用户要求：前端填写AI接入
+
+管理员系统设置新增AI配置，沿用现有Ant Design纵向表单；provider/model与SecretStr输入先定义统一schema，再实现DB/服务/API/生成TS/前端。Key仅提交后端，AES-GCM密文存DB；主密钥由服务器提供，开发自动生成忽略文件，生产必须显式secret。GET、审计快照、outbox、错误及浏览器存储均不含Key/密文；幂等摘要区分同键不同Key。新Key空输入保留，清除禁用环境回退，Mock可预存但启用DeepSeek必须服务器hybrid。配置保存只标记未验证，未实际调用三方。
+
+保存成功清空Key并显示保存版本；失败保留草稿，刷新只取最新版本供核对。后端管理员权限、If-Match、幂等、状态门禁、原子审计/outbox均测试。浏览器实际保存虚构Key到version2（已配置、输入清空），随后清除到version3（未配置、Mock），未保留测试Key。1440/1024/390px截图存于忽略的.tools/s6-ai-*.jpg，手机clientWidth/scrollWidth均375。静态detector只执行一次结果[]，独立review最终disposition **ship**，无material findings。
+
+| 最终UI核验项 | Verdict |
+|---|---|
+| 入口、信息顺序、字体、材质 | match |
+| 桌面/窄屏、密钥状态、保存反馈与恢复 | match |
+| 认证展示 | match（源码；真实企业会话尚未联调） |
+
+### 身份、日志与任务边界
+
+生产拒绝dev/role头和开发目录，不加载开发.env；受信网关RSA>=2048公钥钉住，RS256 issuer/audience/iat/exp/sub/jti严格校验，JWT角色不赋权。实际授权依AuthIdentity与有效User，CLI显式配置/撤销并同事务审计；未对真实账号操作。SSO写入Origin+HMAC CSRF，浏览器仅内存令牌；登录/退出由同源外层网关提供。OAuth/企微OAuth为明确的目标方案与接口契约，未实现或伪造租户联调。
+
+请求64KiB/10秒、Host、IP及actor限流、429 Retry-After；安全JSON日志事件白名单省略第三方任意消息/异常，应用日志用路由模板不带查询/正文，生产关闭文档并设安全header。根日志/uvicorn/httpx边界测试通过。全局45秒DB租约、5秒续租，仅leader启任务，standby不重复运行；原单任务token/幂等仍保留，最近循环/成功/错误与队列事实可从管理员ops读取。租约/心跳为协调元数据，不写业务审计以免放大。readyz只证明DB版本/租约，不能冒充所有任务成功。
+
+### 部署和恢复证据
+
+新增非root、只读根、tmpfs、drop capabilities、健康依赖与日志轮转的Compose；默认只绑定127.0.0.1:8080 Mock，生产覆盖要求外层HTTPS/SSO网关和受保护secret挂载。API单进程，启动先校验再迁移，不放开未验证live。后端runtime锁不包含测试依赖，前端npm ci。Nginx安全header遵循继承规则，不在子location覆盖；尚无运行时验收。
+
+本机缺Engine，下载官方Compose standalone v5.7.1至忽略工具目录，官方SHA256 e4316597452650ae92fe9719a2a7c2fce8f56c5ceafed88d2aed6e39b2b2b2d0核对通过，实际执行Mock与生产示例config --quiet均退出0；没有将Python/YAML检查冒充Docker配置验证，也未宣称镜像运行成功。
+
+SQLite在线快照备份、quick_check/FK/表计数与SHA256 manifest、新文件恢复通过；恢复只清协调租约，不覆盖活动库、不清业务状态或盲目重发通知。本机实际演练revision0006_s6、41申请、快照时1044审计一致。主密钥需另行安全备份；checksum不提供备份来源认证。完整切换/回退、secret ACL、网关与监控步骤见docs/15。
+
+隔离smoke:security实际启动生产配置Mock HTTP进程，生成合成RSA/secret与独立库，验证签名会话→DB角色→CSRF拒绝/通过→dev头拒绝→Key加密/元数据→worker健康→生产docs404→日志无合成secret；进程结束后退出，不访问真实IdP/TLS/外部服务。现有smoke:http与smoke:wecom通过，后者本轮保留虚构申请A_S5_1A74F703。未删除失败测试、停用安全检查或把未执行项目报pass。
+
+以下为S5及更早阶段历史记录。
+
 ## S5 实际交付（2026-11-12）
 
 ```text

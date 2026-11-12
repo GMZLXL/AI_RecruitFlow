@@ -1,0 +1,67 @@
+name: ai-recruitflow
+services:
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    environment:
+      APP_ENV: development
+      APP_MODE: mock
+      AUTH_MODE: dev
+      DEV_AUTH_ENABLED: "true"
+      DEV_PROXY_NETWORKS: "172.30.123.0/24"
+      DATABASE_URL: sqlite:////data/recruitflow.db
+      APP_TIMEZONE: Asia/Shanghai
+      AI_PROVIDER: mock
+      SMARTSHEET_PROVIDER: mock
+      WECOM_PROVIDER: mock
+      SYNC_WORKER_ENABLED: "true"
+      WECOM_WORKER_ENABLED: "true"
+      RATE_LIMIT_ENABLED: "true"
+    volumes:
+      - data:/data
+      - local-secrets:/app/.secrets
+    networks: [backend]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/readyz',timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    ports: ["127.0.0.1:8080:8080"]
+    networks: [backend]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+networks:
+  backend:
+    ipam:
+      config: [{subnet: 172.30.123.0/24}]
+volumes:
+  data:
+  local-secrets:

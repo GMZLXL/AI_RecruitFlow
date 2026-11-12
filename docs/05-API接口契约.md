@@ -1,5 +1,23 @@
 # 05｜REST API 接口契约（v1）
 
+## S6 当前增量（优先于历史契约）
+
+当前OpenAPI **0.7.0 / 41路径**；新增schemas/ai_settings.py、operations.py并扩展identity，前端TS已生成。以下路径前缀均为`/api/v1`：
+
+| 方法/路径 | 行为 |
+|---|---|
+| GET /auth/config | 公开；authentication=development_only/sso_cookie、mode=mock/hybrid、同源login_url/logout_url或null |
+| GET /readyz | 公开；DB版本和已启用worker租约就绪返回Health信封，否则503 NOT_READY |
+| GET /ops/status | 管理员；schema、worker_role/lease_healthy/heartbeat_at、各worker循环/成功/安全错误、实际队列计数及最老未完成申请同步时间、限流与日志格式；不返token |
+| GET /settings/ai | 管理员；只读配置元数据，不返回Key/密文 |
+| PATCH /settings/ai | 管理员；If-Match设置version + Idempotency-Key + Update；返回最新元数据 |
+
+AISettingsRead字段为version/provider/model/has_api_key/key_source/secret_store_ready/real_calls_allowed/status；provider=mock/deepseek，key_source=managed/environment/none，status=mock_only/blocked_by_credentials/configured_not_verified/mode_mismatch。Update要求provider/model/change_reason；model最长120且只允许字母数字点/下划线/连字符。api_key为可选SecretStr（1~512字符、无首尾空白），clear_api_key默认false；新增/清除互斥。Key为空或省略保留，clear禁用环境Key回退。Key哈希摘要用于幂等比较，正文Key不入幂等表。首次读取虚拟version1、首次保存version2。
+
+过期版本/同键不同内容409，Mock启用DeepSeek为409 REAL_AI_NOT_ALLOWED，无Key为400 API_KEY_REQUIRED，主密钥不可用503 SECRET_STORE_NOT_READY，越权403、结构422。Key只经安全表单提交后端加密，禁止URL参数、浏览器存储和日志；保存不代表联通验证。业务/audit/outbox同事务，网络在事务之外。
+
+GET /me的authentication新增sso_cookie及可空csrf_token；SSO使用HttpOnly Secure `__Host-recruitflow_session`，RS256+issuer/audience/时间/claims与DB映射授权。写入须精确Origin和X-CSRF-Token；开发头生产403，未认证401，未授权/CSRF为403。开发目录生产关闭。请求体≤64KiB/10秒，限流429附Retry-After，默认600/IP/min与30/录入actor/min；生产关闭/docs、/openapi.json。网关Cookie/claim协议与全部运行限制见docs/15。以下保留阶段历史。
+
 ## S5 当前增量（优先于历史契约）
 
 当前OpenAPI 0.6.0、37个路径；统一Pydantic在schemas/wecom.py，生成OpenAPI和前端TS。所有JSON接口沿用data/request_id与分页/错误信封；回调特例按平台协议使用纯文本响应。
