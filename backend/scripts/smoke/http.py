@@ -1,21 +1,26 @@
 """Smoke-test running local servers with synthetic data; never connects to external services."""
 
+import os
 import time
 import uuid
 
 import httpx
 
-with httpx.Client(base_url="http://127.0.0.1:5173", trust_env=False, timeout=15) as client:
+with httpx.Client(base_url=os.getenv("RECRUITFLOW_WEB_URL", "http://127.0.0.1:5173"), trust_env=False, timeout=15) as client:
     html = client.get("/")
     html.raise_for_status()
     assert '<div id="root">' in html.text
-    assert "/src/main.tsx" in html.text
+    assert ("/assets/" if os.getenv("RECRUITFLOW_WEB_BUILD") == "production" else "/src/main.tsx") in html.text
+    if os.getenv("RECRUITFLOW_WEB_BUILD") == "production":
+        assert "default-src 'self'" in html.headers["content-security-policy"]
+        assert html.headers["x-frame-options"] == "DENY"
     # Exercise the Vite /api proxy as well as the direct FastAPI endpoint.
     proxy_health = client.get("/api/v1/health")
     proxy_health.raise_for_status()
     assert proxy_health.json()["data"]["mode"] == "mock"
+    assert proxy_health.headers["cache-control"] == "no-store"
 
-with httpx.Client(base_url="http://127.0.0.1:8000/api/v1", trust_env=False, timeout=15) as client:
+with httpx.Client(base_url=os.getenv("RECRUITFLOW_API_URL", "http://127.0.0.1:8000/api/v1"), trust_env=False, timeout=15) as client:
     assert client.get("/health").json()["data"]["status"] == "ok"
     before = client.get("/dashboard/overview").json()["data"]["new_applications"]
     event_id = "http-smoke-" + uuid.uuid4().hex
@@ -86,5 +91,5 @@ with httpx.Client(base_url="http://127.0.0.1:8000/api/v1", trust_env=False, time
     assert len({job["remote_record_id"] for job in target_jobs}) == 1
     assert all(job["provider"] == "mock" for job in target_jobs)
     assert client.get("/sync/summary").json()["data"]["last_success_at"] is not None
-    print("PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/async mock sync")
+    print("PASS: web + proxy + API + create/result/schedule/review/dedupe/dashboard/async mock sync")
     print("Synthetic record remains in the local Mock database. Browser rendering was not tested.")

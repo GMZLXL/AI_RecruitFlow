@@ -1,5 +1,6 @@
 """Local Mock only; retains one explicitly synthetic application and notification."""
 
+import os
 import time
 import uuid
 
@@ -7,7 +8,7 @@ import httpx
 
 
 def run():
-    with httpx.Client(base_url="http://127.0.0.1:8000/api/v1", timeout=10, trust_env=False) as client:
+    with httpx.Client(base_url=os.getenv("RECRUITFLOW_API_URL", "http://127.0.0.1:8000/api/v1"), timeout=10, trust_env=False) as client:
         status = client.get("/wecom/status").json()["data"]
         assert status["provider"] == "mock" and status["worker_enabled"], "Requires local Mock + enabled worker"
         code = "A_S5_" + uuid.uuid4().hex[:8].upper()

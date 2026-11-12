@@ -32,6 +32,10 @@ def test_one_candidate_two_positions_and_no_name_merge(client):
     assert second.status_code == 201
     assert second.json()["data"]["candidate_id"] == app["candidate_id"]
     assert second.json()["data"]["id"] != app["id"]
+    moved = client.patch(f"/api/v1/applications/{app['id']}", headers=headers("hr-a", app["version"]),
+        json={"stage": "screening", "change_reason": "虚构多岗状态隔离验收"})
+    assert moved.status_code == 200
+    assert client.get(f"/api/v1/applications/{second.json()['data']['id']}", headers=headers("hr-a")).json()["data"]["stage"] == "applied"
     assert (
         client.get(
             "/api/v1/applications", params={"candidate_id": candidate["id"]}, headers=headers("hr-a")

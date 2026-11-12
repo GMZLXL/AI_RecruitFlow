@@ -32,6 +32,8 @@
     "smoke:security": "node scripts/workspace/python.mjs -m scripts.smoke.security",
     "smoke:sync-failure": "node scripts/workspace/python.mjs -m scripts.smoke.sync_failure",
     "demo:seed": "node scripts/workspace/python.mjs -m scripts.demo.seed",
+    "demo:isolated": "node scripts/workspace/python.mjs -m scripts.acceptance.demo",
+    "acceptance": "node scripts/workspace/python.mjs -m scripts.acceptance.release",
     "integrations:tencent:discover": "node scripts/workspace/python.mjs -m scripts.integrations.tencent_discover",
     "build": "npm run build --workspace frontend",
     "check": "npm run contracts:check && npm run lint && npm run typecheck && npm test && npm run build"

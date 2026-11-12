@@ -1,5 +1,6 @@
 """Running HTTP S4 acceptance using fictional local Mock facts only."""
 
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -13,7 +14,7 @@ def headers(version=None):
     return result
 
 
-with httpx.Client(base_url="http://127.0.0.1:8000/api/v1", trust_env=False, timeout=20) as client:
+with httpx.Client(base_url=os.getenv("RECRUITFLOW_API_URL", "http://127.0.0.1:8000/api/v1"), trust_env=False, timeout=20) as client:
     assert client.get("/integrations/status").json()["data"]["sync_provider"] == "mock"
     before = client.get("/dashboard/overview").json()["data"]
     options = client.get("/recruitment/options").json()["data"]

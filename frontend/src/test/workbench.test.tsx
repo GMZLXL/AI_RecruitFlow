@@ -30,6 +30,15 @@ beforeEach(() => {
 });
 
 describe('看板与列表', () => {
+  it('T16 空库候选人列表显示明确空态，不生成示例行', async () => {
+    vi.mocked(api.applications).mockResolvedValue(list([]));
+    show(<Candidates canWrite={false} />);
+    await screen.findByText('招聘申请 · 0条');
+    expect(screen.getByText('当前筛选下暂无申请，可调整条件或新增申请')).toBeVisible();
+    expect(screen.queryByRole('link', { name: application.application_code })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '新增申请' })).not.toBeInTheDocument();
+  });
+
   it('API失败可重试，空数据接受率不伪造为0%', async () => {
     vi.mocked(api.dashboard).mockRejectedValueOnce(failure(500, '读取暂时失败')).mockResolvedValue(emptyDashboard);
     show(<Dashboard />);
@@ -77,6 +86,7 @@ describe('受控写入', () => {
     await userEvent.type(screen.getByLabelText('审核说明'), '已核对虚构申请编号');
     await userEvent.click(screen.getByRole('button', { name: '确认原提议' }));
     await waitFor(() => expect(onResolved).toHaveBeenCalledWith(expect.objectContaining({ status: 'confirmed' })));
+    expect(await screen.findByText('已审核执行并写入审计')).toBeVisible();
     expect(api.resolve).toHaveBeenCalledWith(expect.objectContaining({ id: row.id }), expect.objectContaining({ application_id: application.id, expected_application_version: 1, change_reason: '已核对虚构申请编号' }));
   });
   it('阶段冲突保留人工依据，不自动重放覆盖', async () => {

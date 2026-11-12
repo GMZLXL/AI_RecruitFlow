@@ -11,3 +11,4 @@ vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect()
 const getStyle = window.getComputedStyle;
 window.getComputedStyle = element => getStyle(element);
 HTMLElement.prototype.scrollIntoView = vi.fn();
+import '@ant-design/v5-patch-for-react-19';
