@@ -27,6 +27,7 @@ from app.db import (
     utcnow,
 )
 from app.domain import Outcome, Role, Stage
+from app.integrations.smartsheet.factory import sync_provider
 
 
 def fail(status: int, code: str, message: str) -> NoReturn:
@@ -133,6 +134,14 @@ def record_change(
             metadata_json={"before": before or {}, "after": after, "reason": redact_reason(reason)},
         )
     )
+    payload = {"schema_version": 1, "entity": after}
+    if isinstance(obj, Application):
+        payload["projection"] = s.ApplicationProjection(
+            application_id=obj.id, application_code=obj.application_code,
+            candidate_name=obj.candidate.display_name, position_title=obj.position.title,
+            stage=Stage(obj.stage), outcome=Outcome(obj.outcome), version=obj.version,
+            deleted=obj.deleted_at is not None, updated_at=obj.updated_at,
+        ).model_dump(mode="json")
     db.add(
         Outbox(
             entity_type=entity_type,
@@ -140,7 +149,8 @@ def record_change(
             application_id=application_id,
             version=obj.version,
             op="delete" if obj.deleted_at else "upsert",
-            payload_json={"schema_version": 1, "entity": after},
+            payload_json=payload,
+            provider=sync_provider(),
         )
     )
     if isinstance(obj, Application):

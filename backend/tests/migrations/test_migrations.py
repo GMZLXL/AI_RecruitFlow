@@ -1,6 +1,7 @@
 import hashlib
 import io
 import sqlite3
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,8 @@ from sqlalchemy import create_engine, inspect, select
 from sqlalchemy.orm import sessionmaker
 
 from alembic import command
-from app.db import SCHEMA_REVISION, Application, Base, Event, RemoteLink
+from app.db import SCHEMA_REVISION, Application, Base, Event, MockSheetRecord, RemoteLink
+from app.schemas import ApplicationProjection
 from scripts.migrations.upgrade_s0 import upgrade_s0
 
 
@@ -100,3 +102,25 @@ def test_s0_copy_keeps_original_backup_uuid_history_and_links(tmp_path):
         upgrade_s0(source, destination)
     with pytest.raises(ValueError):
         upgrade_s0(source, source)
+
+
+def test_s2_mock_mapping_is_preserved_and_backfilled_on_s3_upgrade(tmp_path):
+    source, destination = tmp_path / "s0.db", tmp_path / "s3.db"
+    create_legacy(source)
+    upgrade_s0(source, destination)
+    engine = create_engine("sqlite:///" + destination.as_posix())
+    config = configuration()
+    with engine.begin() as connection:
+        config.attributes["connection"] = connection
+        command.downgrade(config, "0002_s2")
+        command.upgrade(config, "head")
+        command.check(config)
+    with sessionmaker(bind=engine)() as db:
+        record = db.scalar(select(MockSheetRecord))
+        assert record is not None and record.remote_record_id == "MOCK-legacy"
+        projection = ApplicationProjection.model_validate(record.payload_json)
+        assert projection.application_code == "A10001" and projection.version == 2
+        assert projection.updated_at.utcoffset() == timedelta(0)
+        application = db.scalar(select(Application))
+        assert application is not None and record.application_id == application.id
+    engine.dispose()

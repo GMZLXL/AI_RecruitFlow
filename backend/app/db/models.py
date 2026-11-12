@@ -146,6 +146,28 @@ class Outbox(Base):
     last_error: Mapped[str | None] = mapped_column(Text)
     remote_record_id: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    provider: Mapped[str] = mapped_column(String(40), default="mock", server_default="mock")
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    cycle_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    processing_token: Mapped[str | None] = mapped_column(String(36))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class SyncWorkerLease(Base):
+    __tablename__ = "sync_worker_leases"
+    name: Mapped[str] = mapped_column(String(40), primary_key=True)
+    token: Mapped[str | None] = mapped_column(String(36))
+    expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class MockSheetRecord(Base):
+    __tablename__ = "mock_sheet_records"
+    application_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    remote_record_id: Mapped[str] = mapped_column(String(100), unique=True)
+    version: Mapped[int] = mapped_column(Integer)
+    payload_json: Mapped[dict] = mapped_column(JSON)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
 
 
 class RemoteLink(Base):

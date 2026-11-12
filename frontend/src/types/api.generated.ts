@@ -340,6 +340,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sync/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sync Summary */
+        get: operations["sync_summary_api_v1_sync_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync/run": {
         parameters: {
             query?: never;
@@ -351,6 +368,23 @@ export interface paths {
         put?: never;
         /** Run Mock Sync */
         post: operations["run_mock_sync_api_v1_sync_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Sync */
+        post: operations["retry_sync_api_v1_sync_jobs__job_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -788,10 +822,16 @@ export interface components {
             model?: string | null;
             /**
              * Tencent Docs
-             * @default mock_only
-             * @constant
+             * @default blocked_by_credentials
+             * @enum {string}
              */
-            tencent_docs: "mock_only";
+            tencent_docs: "blocked_by_credentials" | "blocked_by_schema";
+            /**
+             * Sync Provider
+             * @default mock
+             * @enum {string}
+             */
+            sync_provider: "mock" | "tencent_docs";
             /**
              * Wecom
              * @default not_connected
@@ -1102,9 +1142,21 @@ export interface components {
             /** Request Id */
             request_id: string;
         };
+        /** Response[SyncJob] */
+        Response_SyncJob_: {
+            data: components["schemas"]["SyncJob"];
+            /** Request Id */
+            request_id: string;
+        };
         /** Response[SyncRun] */
         Response_SyncRun_: {
             data: components["schemas"]["SyncRun"];
+            /** Request Id */
+            request_id: string;
+        };
+        /** Response[SyncSummary] */
+        Response_SyncSummary_: {
+            data: components["schemas"]["SyncSummary"];
             /** Request Id */
             request_id: string;
         };
@@ -1152,33 +1204,79 @@ export interface components {
             /** Attempts */
             attempts: number;
             /**
-             * Mode
-             * @default mock
-             * @constant
+             * Provider
+             * @enum {string}
              */
-            mode: "mock";
+            provider: "mock" | "tencent_docs";
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "mock" | "real";
+            /** Revision */
+            revision: number;
+            /** Cycle Attempts */
+            cycle_attempts: number;
+            /** Internal Only */
+            internal_only: boolean;
+            /** Last Error */
+            last_error: string | null;
+            /** Next Retry At */
+            next_retry_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** SyncRetry */
+        SyncRetry: {
+            /** Reason */
+            reason: string;
         };
         /** SyncRun */
         SyncRun: {
-            /** Processed */
-            processed: number;
             /**
-             * Mode
-             * @default mock
-             * @constant
+             * Accepted
+             * @default true
              */
-            mode: "mock";
+            accepted: boolean;
             /**
-             * Warning
-             * @default 仅模拟，不代表写入腾讯文档
+             * Message
+             * @default 已请求后台处理，实际结果请查询任务状态
              */
-            warning: string;
+            message: string;
         };
         /**
          * SyncState
          * @enum {string}
          */
         SyncState: "pending" | "processing" | "mock_synced" | "synced" | "failed" | "dead" | "superseded";
+        /** SyncSummary */
+        SyncSummary: {
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /** Last Success At */
+            last_success_at: string | null;
+            /** Worker Enabled */
+            worker_enabled: boolean;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "mock" | "tencent_docs";
+            /**
+             * Tencent Docs
+             * @enum {string}
+             */
+            tencent_docs: "blocked_by_credentials" | "blocked_by_schema";
+            /** Message */
+            message: string;
+        };
         /** UserRead */
         UserRead: {
             /** Id */
@@ -3996,6 +4094,8 @@ export interface operations {
             query?: {
                 page?: number;
                 page_size?: number;
+                status?: components["schemas"]["SyncState"] | null;
+                application_id?: string | null;
             };
             header?: {
                 "x-dev-user"?: string | null;
@@ -4079,11 +4179,10 @@ export interface operations {
             };
         };
     };
-    run_mock_sync_api_v1_sync_run_post: {
+    sync_summary_api_v1_sync_summary_get: {
         parameters: {
             query?: never;
             header?: {
-                "Idempotency-Key"?: string | null;
                 "x-dev-user"?: string | null;
             };
             path?: never;
@@ -4097,7 +4196,186 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["Response_SyncSummary_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    run_mock_sync_api_v1_sync_run_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+                "x-dev-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["Response_SyncRun_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    retry_sync_api_v1_sync_jobs__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": number;
+                "Idempotency-Key"?: string | null;
+                "x-dev-user"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncRetry"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Response_SyncJob_"];
                 };
             };
             /** @description Bad Request */

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import subprocess
 import sys
@@ -11,6 +12,7 @@ from sqlalchemy import event, select
 
 from app.db import Application, AuditLog, SessionLocal
 from app.main import app
+from app.services.sync import process_batch
 from tests.helpers import advance, counts, create
 
 
@@ -36,16 +38,12 @@ def test_full_mock_flow(client):
         "mode": "mock",
     }
     sync = client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"]
-    assert sync["processed"] == 9 and sync["mode"] == "mock"
+    assert sync["accepted"] is True
+    assert asyncio.run(process_batch()) == 9
     jobs = client.get("/api/v1/sync/jobs").json()["data"]
     assert all(j["status"] == "mock_synced" for j in jobs)
     assert len({j["remote_record_id"] for j in jobs if j["entity_type"] == "applications"}) == 1
-    assert (
-        client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"][
-            "processed"
-        ]
-        == 0
-    )
+    assert asyncio.run(process_batch()) == 0
     assert client.get("/api/v1/dashboard/overview").json()["data"]["pending_sync"] == 0
 
 
@@ -139,7 +137,7 @@ def test_empty_dashboard_and_integrations(client):
     assert overview["new_applications"] == overview["pending_sync"] == 0
     assert overview["by_stage"] == {}
     integrations = client.get("/api/v1/integrations/status").json()["data"]
-    assert integrations["tencent_docs"] == "mock_only"
+    assert integrations["tencent_docs"] == "blocked_by_credentials"
     assert integrations["deepseek"] == integrations["wecom"] == "not_connected"
 
 

@@ -1,5 +1,6 @@
 """Smoke-test running local servers with synthetic data; never connects to external services."""
 
+import time
 import uuid
 
 import httpx
@@ -72,15 +73,18 @@ with httpx.Client(base_url="http://127.0.0.1:8000/api/v1", trust_env=False, time
     )
     assert client.get("/dashboard/overview").json()["data"]["new_applications"] == before + 1
     sync = client.post("/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"]
-    assert sync["mode"] == "mock"
-    jobs = client.get("/sync/jobs", params={"page_size": 100}).json()["data"]
-    target_jobs = [
-        job
-        for job in jobs
-        if job["entity_type"] == "applications" and job["application_id"] == application["id"]
-    ]
+    assert sync["accepted"] is True
+    deadline = time.monotonic() + 20
+    while True:
+        jobs = client.get("/sync/jobs", params={"page_size": 100, "application_id": application["id"]}).json()["data"]
+        target_jobs = [job for job in jobs if job["entity_type"] == "applications"]
+        if len(target_jobs) == 5 and all(job["status"] in {"mock_synced", "superseded"} for job in target_jobs):
+            break
+        assert time.monotonic() < deadline, "Background Mock sync did not complete in 20 seconds"
+        time.sleep(0.1)
     assert len(target_jobs) == 5
     assert len({job["remote_record_id"] for job in target_jobs}) == 1
-    assert all(job["status"] == "mock_synced" for job in target_jobs)
-    print("PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/mock sync")
+    assert all(job["provider"] == "mock" for job in target_jobs)
+    assert client.get("/sync/summary").json()["data"]["last_success_at"] is not None
+    print("PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/async mock sync")
     print("Synthetic record remains in the local Mock database. Browser rendering was not tested.")

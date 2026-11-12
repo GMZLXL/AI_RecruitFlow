@@ -7,6 +7,8 @@ export type Application = Schemas['ApplicationRead'];
 export type Stage = Schemas['Stage'];
 export type ApplicationCreate = Schemas['ApplicationCreate'];
 export type SyncJob = Schemas['SyncJob'];
+export type SyncState = Schemas['SyncState'];
+export type SyncSummary = Schemas['SyncSummary'];
 export type DashboardData = Schemas['DashboardData'];
 export type IngestResult = Schemas['IngestionResult'];
 export type Pagination = Schemas['Pagination'];
@@ -25,7 +27,9 @@ type SyncList = operations['sync_jobs_api_v1_sync_jobs_get']['responses'][200]['
 type CreateResponse = operations['create_application_api_v1_applications_post']['responses'][201]['content']['application/json'];
 type DashboardResponse = operations['dashboard_api_v1_dashboard_overview_get']['responses'][200]['content']['application/json'];
 type IngestResponse = operations['ingestion_api_v1_ingestions_post']['responses'][200]['content']['application/json'];
-type SyncResponse = operations['run_mock_sync_api_v1_sync_run_post']['responses'][200]['content']['application/json'];
+type SyncResponse = operations['run_mock_sync_api_v1_sync_run_post']['responses'][202]['content']['application/json'];
+type SyncSummaryResponse = operations['sync_summary_api_v1_sync_summary_get']['responses'][200]['content']['application/json'];
+type RetrySyncResponse = operations['retry_sync_api_v1_sync_jobs__job_id__retry_post']['responses'][200]['content']['application/json'];
 
 export const api = {
   me: async () => (await client.get<MeResponse>('/me')).data.data,
@@ -45,7 +49,10 @@ export const api = {
   confirmations: async (page = 1) => (await client.get<ConfirmationsResponse>('/confirmations', { params: { page, page_size: 8 } })).data,
   resolve: async (row: Confirmation, data: ResolveRequest) => (await client.post<ResolveResponse>(`/confirmations/${row.id}/resolve`, data,
     { headers: { 'If-Match': row.version, 'Idempotency-Key': crypto.randomUUID() } })).data.data,
-  syncJobs: async (page = 1, page_size = 8) =>
-    (await client.get<SyncList>('/sync/jobs', { params: { page, page_size } })).data,
+  syncJobs: async (page = 1, page_size = 8, status?: SyncState, signal?: AbortSignal) =>
+    (await client.get<SyncList>('/sync/jobs', { params: { page, page_size, status }, signal })).data,
+  syncSummary: async (signal?: AbortSignal) => (await client.get<SyncSummaryResponse>('/sync/summary', { signal })).data.data,
+  retrySync: async (row: SyncJob, reason: string, key: string) => (await client.post<RetrySyncResponse>(`/sync/jobs/${row.id}/retry`,
+    { reason } satisfies Schemas['SyncRetry'], { headers: { 'If-Match': row.revision, 'Idempotency-Key': key } })).data.data,
   runMockSync: async () => (await client.post<SyncResponse>('/sync/run', {}, { headers: { 'Idempotency-Key': crypto.randomUUID() } })).data.data,
 };

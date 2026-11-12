@@ -20,7 +20,19 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 from alembic import command  # noqa: E402
 from app.core.config import BACKEND_ROOT  # noqa: E402
 from app.core.security import DEV_IDS, seed_dev_users  # noqa: E402
-from app.db import Application, AuditLog, Candidate, Event, Outbox, Position, RemoteLink, utcnow  # noqa: E402
+from app.db import (  # noqa: E402
+    Application,
+    AuditLog,
+    Candidate,
+    Event,
+    MockSheetRecord,
+    Outbox,
+    Position,
+    RemoteLink,
+    utcnow,
+)
+from app.domain import Outcome, Stage  # noqa: E402
+from app.schemas import ApplicationProjection  # noqa: E402
 from app.services import snapshot  # noqa: E402
 
 
@@ -160,6 +172,17 @@ def upgrade_s0(source: Path, destination: Path) -> Path:
                     if job["application_id"] == row["application_id"] and job["status"] == "mock_synced"
                 ]
                 app_id = mapped("applications", row["application_id"])
+                obj = applications[row["application_id"]]
+                candidate = db.get(Candidate, obj.candidate_id)
+                assert candidate is not None
+                projected = ApplicationProjection(
+                    application_id=app_id, application_code=obj.application_code,
+                    candidate_name=candidate.display_name, position_title=obj.position.title,
+                    stage=Stage(obj.stage), outcome=Outcome(obj.outcome), version=max(synced, default=1),
+                    updated_at=obj.updated_at,
+                )
+                db.add(MockSheetRecord(application_id=app_id, remote_record_id=row["remote_record_id"],
+                    version=projected.version, payload_json=projected.model_dump(mode="json"), updated_at=utcnow()))
                 db.add(
                     RemoteLink(
                         id=mapped("remote_record_links", row["id"]),

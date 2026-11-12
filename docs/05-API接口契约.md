@@ -1,6 +1,27 @@
 # 05｜REST API 接口契约（v1）
 
-## S2 当前已实现契约
+## S3 当前增量（优先于历史契约）
+
+运行OpenAPI为0.4.0、22个实际路径；Pydantic源、OpenAPI和前端生成类型已同步。
+
+| 方法/路径（前缀/api/v1） | 当前行为 |
+|---|---|
+| GET /sync/jobs | 管理员；page/page_size、status枚举、application_id筛选；按创建时间/版本倒序 |
+| GET /sync/summary | 管理员；实际counts、last_success_at（仅申请投影，含Mock）、worker_enabled、provider、tencent_docs、message |
+| POST /sync/run | 管理员、Idempotency-Key；HTTP 202，data:{accepted:true,message}，只唤醒后台，不表示同步成功 |
+| POST /sync/jobs/{id}/retry | 管理员；Idempotency-Key、If-Match任务revision、body:{reason:非空最多300字}；仅failed/dead→pending，返回SyncJob |
+
+SyncJob：id/entity_type/entity_id/application_id、业务version、status、remote_record_id、attempts累计、cycle_attempts本轮、provider(mock/tencent_docs)、mode(mock/real)、revision、internal_only、last_error安全错误码、next_retry_at/completed_at/created_at UTC时间。不返回原始payload、处理token或凭证。状态包括pending/processing/mock_synced/synced/failed/dead/superseded；internal_only事件不代表外部写入。
+
+空白说明422，无任务404，越权403，缺幂等键400，过期revision或状态不符409。同键同内容复用响应，不同说明/版本409；重试只重置本轮次数。仅failed且到期自动重试；dead等待管理员。已由更高版本同步的旧任务转superseded，不覆盖远端。
+
+POST /sync/run相对S2从200及processed改为202及accepted，调用方必须轮询GET /sync/jobs；Web与冒烟脚本已迁移。看板pending_sync现在统计pending/processing/failed/dead，避免失败任务从待处理总量中消失。
+
+GET /integrations/status新增sync_provider；tencent_docs由mock_only改为blocked_by_credentials/blocked_by_schema，分别表示缺Token/缺授权Schema与实测映射。配置Token不会返回connected。DeepSeek/企微字段保持S2语义。
+
+内部ApplicationProjection为schema_version=1、application_id/code、candidate_name、position_title、stage/outcome、version、deleted、updated_at；只有适配器处理外部字段ID。新增outbox快照包含此投影；旧S1/S2快照在领取边界转换。
+
+## S2 历史契约（由S3增补）
 
 目录已工程化，统一契约源为backend/app/schemas/，路由在backend/app/api/v1/。运行OpenAPI为0.3.0、20个实际路径；以下S2内容优先于历史说明。
 

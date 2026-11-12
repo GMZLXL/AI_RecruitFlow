@@ -1,5 +1,54 @@
 # AI RecruitFlow 实施报告
 
+## S3 实际交付（2026-11-12）
+
+```text
+阶段：S3
+已完成：SmartSheetAdapter协议、持久Mock模拟表与remote_id映射；事务性投影快照；后台扫描/领取租约/过期恢复；指数退避/死信；管理员幂等重试；React同步统计/筛选/自动刷新/重试表单；只读MCP工具发现及腾讯失败关闭边界。
+本阶段变更文件：见下方分组清单；Pydantic→OpenAPI 0.4.0（22个路径）→前端生成类型已同步。
+数据库迁移：0003_s3；本机现有S2库升级完成，旧Mock ID保留并回填模拟存储；空库升降/重升、S0复制、S2既有映射升级、PostgreSQL离线DDL、Alembic check通过。
+运行的命令：npm run check；npm run db:upgrade；npm run db:check；npm run smoke:http；npm run smoke:sync-failure；npm run integrations:tencent:discover；compileall；S3专项pytest；git diff --check。
+测试结果：完整pytest124通过、0失败、0跳过；最终任务重试时间清理后17项专项再通过。Python/TS类型、Ruff/ESLint、契约、build、迁移检查、HTTP异步Mock链路和浏览器死信重试通过。
+未完成/阻塞：腾讯Token缺失，发现命令BLOCKED_BY_CREDENTIALS/退出2；真实工具Schema、字段映射、测试表查询/新增/修改/复查及会员权限均未联调。腾讯适配器不能真实写入，不宣称S3真实集成已完成。
+重要风险：仅单实例本机开发身份，不可生产使用；Mock重放幂等不能证明腾讯真实建行幂等；真实PostgreSQL/跨平台部署未实测；保留测试客户端弃用和前端大包警告。
+下一阶段：S4（招聘看板和前端产品体验）；真实腾讯授权联调独立待凭证补齐。本轮未进入S4。
+```
+
+### 文件与工程边界
+
+- backend/app/schemas/integration.py及schemas出口：统一ApplicationProjection、SyncJob/SyncRun/SyncRetry/SyncSummary和连接状态；同步前端类型与contracts/openapi.yaml。
+- backend/app/db/models.py、db出口、alembic/versions/0003_s3_async_sync.py：provider、revision、累计/本轮尝试、领取token/租约和完成时间；sync_worker_leases及mock_sheet_records；既有Mock映射回填。
+- backend/app/integrations/smartsheet/{base,mock,tencent,factory,discovery}.py：协议、独立事务的持久Mock、未验证即阻断的腾讯适配器、provider工厂、只读Streamable HTTP工具发现。
+- backend/app/services/sync.py、jobs/sync_worker.py、main.py：领取→提交→事务外IO→独立确认；后台周期和唤醒，20秒IO上限、120秒领取、5/10/20/40秒退避、第5次失败dead。
+- backend/app/services/common.py、core/security.py、api/v1/{sync,identity,dashboard}.py：业务快照包含稳定投影，provider固定在任务创建时；不可登录系统账号审计；管理员任务API；看板积压包含失败与死信。
+- frontend/src/pages/SyncCenter.tsx、features/sync/presentation.ts、services/api.ts：实际统计、状态分页、5秒刷新、错误与下次重试、审核说明表单；请求失败保留输入，任务revision冲突提示刷新；组件不持有外部Token。
+- backend/scripts/integrations/tencent_discover.py、scripts/smoke/{http,sync_failure}.py、scripts/migrations/upgrade_s0.py、package.json：用途分目录，故障演示可复现，旧S0复制兼容新模拟存储。
+- backend/tests/integration/test_s3.py、unit/test_mcp_discovery.py、migrations/test_migrations.py及原冒烟适配；README、环境示例、状态表、docs/03/04/05/08/09/13/14与阶段计划同步。
+
+### 一致性、幂等与权限
+
+数据库业务记录是事实来源，外部失败不回滚本地申请。业务写入与audit/outbox同事务；任务管理只更新任务元数据和审计，防止递归生成新outbox。同步IO时没有业务Session/已借出数据库连接，测试通过实际连接池计数确认。
+
+Mock以本地申请ID形成稳定建行键，以业务version条件更新；处理后保存RemoteLink，后续更新复用同一ID。独立模拟写入成功但本地确认丢失，重试恢复同一行；旧version被更新版本覆盖后superseded，不回退远端；远端记录或已成功映射丢失直接dead，提示人工恢复而非盲目新建。实体provider一经持久化不会跟随环境切换，旧Mock任务不会意外发往腾讯。
+
+单实例任务租约防止重复批处理，处理token对确认进行数据库条件更新，过期工作者不能覆盖新领取结果。周期错误只记录安全代码，不回显上游异常。永久权限/凭证/Schema错误直接dead；临时故障有限退避；管理员重试须权限、If-Match任务revision、幂等键和非空原因，保留累计尝试与审核记录。业务version不作为重试状态版本使用。终态及处理中不残留自动重试时间。
+
+只有applications调用SmartSheet，其它outbox以internal_only归档；Mock标签不冒充腾讯成功。删除以deleted投影软删除事实，不执行真实远端硬删除。默认开发单API进程使用asyncio周期循环，无新增调度/队列依赖；租约不等于生产多节点验收。
+
+### 实际验证证据
+
+完整`npm run check`结果：**124 passed, 1 warning in 19.13s**，Pyright **0 errors**、TS/Ruff/ESLint/契约通过；Vite **built in 17.40s**，JS **2,385.37KB，gzip781.00KB**，保留大包警告。最后补充dead/processing不残留next_retry_at清理后，S3专项 **17 passed, 1 warning in 3.99s**，Ruff和diff检查通过。未删除失败用例或关闭检查。
+
+新增回归覆盖稳定映射、持久Mock、本地成功远端超时、退避到期/5次死信、管理员重试/越权/冲突/幂等、写后超时恢复、映射/远端丢失、租约竞争/过期/旧token确认、实际连接池释放、旧版本防回退/软删除、provider固定、未知/历史错误脱敏、后台lifespan自动处理、非法投影和领取预算。MCP使用明确合成工具的HTTP响应测试JSON/SSE、初始化/分页、鉴权/会员错误和重定向阻断，没有把合成Schema冒充腾讯实际Schema。
+
+本机现有S2库实际升到0003_s3，`npm run db:check`为**No new upgrade operations detected**。HTTP实际结果：**PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/async mock sync**，后台自动处理、5个申请版本复用同一模拟ID；样本只保留本地虚构数据。原S0库/既有备份/.env未覆盖，不提交Git。
+
+浏览器在同步中心查看真实统计，筛选死信任务`bf1af783-06fd-496c-ab4b-cd556f0338dd`（虚构申请A00EB2A34F328），空白说明被拦截；填写虚构恢复说明后确认重试，死信数从1变0。该申请已有2~5的新版本成功，旧version1按规则转superseded并复用同一MOCK ID，没有覆盖新状态。复验旧错误提示已清理。窄屏390px下检查了表单外的统计/筛选和横向表格；这不等于S4完整多页面响应式验收。
+
+腾讯发现命令实际返回**BLOCKED_BY_CREDENTIALS**、退出2。只读发现器依据官方指南和MCP协议，提供initialize/tools/list通道；腾讯业务适配器保持失败关闭，无臆造字段或HTTP REST API。没有真实查询/新增/更新、无真实DeepSeek/MCP/企微验证；需授权的后续步骤见docs/08。
+
+以下为S2/S1/S0历史记录，当前状态以上述S3为准。
+
 ## 工程化与 S2 实际交付（2026-11-12）
 
 ```text

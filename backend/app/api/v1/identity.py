@@ -10,6 +10,8 @@ from app.core.security import DEV_IDS, require_admin
 from app.db import (
     User,
 )
+from app.integrations.smartsheet.factory import sync_provider
+from app.integrations.smartsheet.tencent import tencent_status
 
 from .common import DB, Actor, envelope
 
@@ -41,7 +43,8 @@ def development_users(request: Request, db: DB, actor: Actor):
 @router.get("/integrations/status", response_model=s.Response[s.IntegrationStatus])
 def integration_status(request: Request, actor: Actor):
     require_admin(actor)
-    data = s.IntegrationStatus(mode="hybrid" if os.getenv("APP_MODE") == "hybrid" else "mock")
+    data = s.IntegrationStatus(mode="hybrid" if os.getenv("APP_MODE") == "hybrid" else "mock",
+                               sync_provider=sync_provider(), tencent_docs=tencent_status())
     if os.getenv("AI_PROVIDER", "mock") == "deepseek":
         data.parser_provider = "deepseek"
         data.model = os.getenv("DEEPSEEK_MODEL") or None

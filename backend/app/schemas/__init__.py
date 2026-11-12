@@ -24,7 +24,16 @@ from .common import (
     T,
 )
 from .identity import Identity, UserRead
-from .integration import DashboardData, Health, IntegrationStatus, SyncJob, SyncRun
+from .integration import (
+    ApplicationProjection,
+    DashboardData,
+    Health,
+    IntegrationStatus,
+    SyncJob,
+    SyncRetry,
+    SyncRun,
+    SyncSummary,
+)
 from .recruitment import (
     ApplicationCreate,
     ApplicationMutation,
@@ -43,6 +52,9 @@ from .recruitment import (
 )
 
 __all__ = [
+    "ApplicationProjection",
+    "SyncRetry",
+    "SyncSummary",
     "Extraction",
     "IngestionRead",
     "ResolutionResult",

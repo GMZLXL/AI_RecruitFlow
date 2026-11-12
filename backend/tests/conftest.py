@@ -10,6 +10,7 @@ _tmp = tempfile.TemporaryDirectory(prefix="mock-tests-", dir=_cache)
 os.environ["DATABASE_URL"] = "sqlite:///" + str(Path(_tmp.name) / "test.db")
 os.environ["APP_MODE"] = "mock"
 os.environ["APP_ENV"] = "development"
+os.environ["SYNC_WORKER_ENABLED"] = "false"
 
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -43,3 +44,6 @@ def client():
 def isolated_parser_config(monkeypatch):
     monkeypatch.setenv("AI_PROVIDER", "mock")
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.setenv("SMARTSHEET_PROVIDER", "mock")
+    monkeypatch.setenv("MOCK_SHEET_FAILURE", "none")
+    monkeypatch.delenv("TENCENT_DOCS_TOKEN", raising=False)

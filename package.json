@@ -21,6 +21,8 @@
     "lint": "node scripts/workspace/python.mjs -m ruff check app tests scripts alembic && npm run lint --workspace frontend",
     "test": "node scripts/workspace/python.mjs -m pytest -q",
     "smoke:http": "node scripts/workspace/python.mjs -m scripts.smoke.http",
+    "smoke:sync-failure": "node scripts/workspace/python.mjs -m scripts.smoke.sync_failure",
+    "integrations:tencent:discover": "node scripts/workspace/python.mjs -m scripts.integrations.tencent_discover",
     "build": "npm run build --workspace frontend",
     "check": "npm run contracts:check && npm run lint && npm run typecheck && npm test && npm run build"
   },

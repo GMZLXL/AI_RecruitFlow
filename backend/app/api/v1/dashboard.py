@@ -27,7 +27,7 @@ def dashboard(request: Request, db: DB, actor: Actor):
         )
     }
     visible_ids = select(Application.id).where(scope)
-    jobs = select(func.count(Outbox.id)).where(Outbox.status == "pending")
+    jobs = select(func.count(Outbox.id)).where(Outbox.status.in_(["pending", "processing", "failed", "dead"]))
     if actor.role != Role.ADMIN:
         jobs = jobs.where(Outbox.application_id.in_(visible_ids))
     return envelope(

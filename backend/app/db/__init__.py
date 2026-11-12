@@ -8,16 +8,20 @@ from .models import (
     IdempotencyRecord,
     IngestionJob,
     Interview,
+    MockSheetRecord,
     Outbox,
     Position,
     Reminder,
     RemoteLink,
+    SyncWorkerLease,
     User,
 )
 from .session import DATABASE_URL, SCHEMA_REVISION, SessionLocal, engine, get_db, init_db
 
 __all__ = [
     "Base",
+    "MockSheetRecord",
+    "SyncWorkerLease",
     "UTCDateTime",
     "new_id",
     "utcnow",

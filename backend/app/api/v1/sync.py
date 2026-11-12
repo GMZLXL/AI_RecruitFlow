@@ -1,81 +1,109 @@
-from __future__ import annotations
+from typing import Annotated
 
-from fastapi import APIRouter, Request
-from sqlalchemy import select
+from fastapi import APIRouter, Query, Request
+from sqlalchemy import func, select
 
 from app import schemas as s
-from app import services as svc
 from app.core.security import require_admin
-from app.db import (
-    AuditLog,
-    Outbox,
-    RemoteLink,
-    new_id,
-)
+from app.db import AuditLog, Outbox, new_id
+from app.domain import SyncState
+from app.integrations.smartsheet.factory import sync_provider
+from app.integrations.smartsheet.tencent import tencent_status
+from app.jobs.sync_worker import worker_enabled
+from app.services.common import mutate
+from app.services.sync import retry, sync_job
 
-from .common import DB, Actor, Key, Page, PageSize, envelope, listing
+from .common import DB, Actor, Key, Page, PageSize, Version, envelope, listing
 
 router = APIRouter()
 
 
 @router.get("/sync/jobs", response_model=s.ListResponse[s.SyncJob])
-def sync_jobs(request: Request, db: DB, actor: Actor, page: Page = 1, page_size: PageSize = 20):
+def sync_jobs(
+    request: Request,
+    db: DB,
+    actor: Actor,
+    page: Page = 1,
+    page_size: PageSize = 20,
+    status: SyncState | None = None,
+    application_id: Annotated[str | None, Query(max_length=36)] = None,
+):
     require_admin(actor)
+    query = select(Outbox)
+    if status:
+        query = query.where(Outbox.status == status.value)
+    if application_id:
+        query = query.where(Outbox.application_id == application_id)
     return listing(
         request,
         db,
-        select(Outbox).order_by(Outbox.created_at.desc(), Outbox.id),
+        query.order_by(Outbox.created_at.desc(), Outbox.version.desc(), Outbox.id),
         page,
         page_size,
-        s.SyncJob.model_validate,
+        sync_job,
     )
 
 
-@router.post("/sync/run", response_model=s.Response[s.SyncRun])
-def run_mock_sync(request: Request, db: DB, actor: Actor, key: Key = None):
+@router.get("/sync/summary", response_model=s.Response[s.SyncSummary])
+def sync_summary(request: Request, db: DB, actor: Actor):
+    require_admin(actor)
+    counts = {
+        SyncState(status): count
+        for status, count in db.execute(select(Outbox.status, func.count(Outbox.id)).group_by(Outbox.status))
+    }
+    last = db.scalar(
+        select(func.max(Outbox.completed_at)).where(
+            Outbox.entity_type == "applications", Outbox.status.in_(["mock_synced", "synced"])
+        )
+    )
+    return envelope(
+        request,
+        s.SyncSummary(
+            counts=counts,
+            last_success_at=last,
+            worker_enabled=worker_enabled(),
+            provider=sync_provider(),
+            tencent_docs=tencent_status(),
+            message="Mock任务仅写本机模拟表；腾讯文档尚未通过授权和工具Schema验证",
+        ),
+    )
+
+
+@router.post("/sync/run", response_model=s.Response[s.SyncRun], status_code=202)
+async def run_mock_sync(request: Request, db: DB, actor: Actor, key: Key = None):
     require_admin(actor)
 
     def change():
-        jobs = db.scalars(
-            select(Outbox).where(Outbox.status == "pending").order_by(Outbox.created_at, Outbox.id)
-        ).all()
-        for job in jobs:
-            if job.entity_type == "applications":
-                link = db.scalar(
-                    select(RemoteLink).where(
-                        RemoteLink.entity_type == job.entity_type,
-                        RemoteLink.entity_id == job.entity_id,
-                        RemoteLink.provider == "mock",
-                    )
-                )
-                if link is None:
-                    link = RemoteLink(
-                        entity_type=job.entity_type,
-                        entity_id=job.entity_id,
-                        application_id=job.application_id,
-                        remote_record_id="MOCK-" + new_id()[:8],
-                        provider="mock",
-                        last_synced_version=0,
-                    )
-                    db.add(link)
-                    db.flush()
-                link.last_synced_version = max(link.last_synced_version, job.version)
-                job.remote_record_id = link.remote_record_id
-            job.status = "mock_synced"
-            job.attempts += 1
-            db.add(
-                AuditLog(
-                    actor_id=actor.id,
-                    action="mock_sync",
-                    target_type="sync_outbox",
-                    target_id=job.id,
-                    metadata_json={
-                        "version": job.version,
-                        "mode": "mock",
-                        "internal_only": job.entity_type != "applications",
-                    },
-                )
+        db.add(
+            AuditLog(
+                actor_id=actor.id,
+                action="request_sync_run",
+                target_type="sync_worker",
+                target_id=new_id(),
+                metadata_json={"accepted": True},
             )
-        return s.SyncRun(processed=len(jobs))
+        )
+        return s.SyncRun()
 
-    return envelope(request, svc.mutate(db, actor, "run_mock_sync", key, {}, change))
+    result = mutate(db, actor, "request_sync_run", key, {}, change)
+    db.close()
+    request.app.state.sync_wakeup.set()
+    return envelope(request, result)
+
+
+@router.post("/sync/jobs/{job_id}/retry", response_model=s.Response[s.SyncJob])
+async def retry_sync(
+    request: Request, job_id: str, req: s.SyncRetry, db: DB, actor: Actor, expected: Version, key: Key = None
+):
+    require_admin(actor)
+    result = mutate(
+        db,
+        actor,
+        "retry_sync:" + job_id,
+        key,
+        {**req.model_dump(), "revision": expected},
+        lambda: retry(db, actor, job_id, expected, req.reason),
+    )
+    db.close()
+    request.app.state.sync_wakeup.set()
+    return envelope(request, result)

@@ -17,6 +17,7 @@ DEV_DIRECTORY = {
     "manager-a": ("模拟工程负责人", Role.MANAGER, "engineering"),
 }
 DEV_IDS = {alias: str(uuid.uuid5(uuid.NAMESPACE_URL, f"recruitflow:dev:{alias}")) for alias in DEV_DIRECTORY}
+SYNC_ACTOR_ID = str(uuid.uuid5(uuid.NAMESPACE_URL, "recruitflow:system:sync"))
 
 
 def dev_auth_enabled() -> bool:
@@ -31,6 +32,9 @@ def seed_dev_users(session_factory=SessionLocal):
     if not dev_auth_enabled():
         return
     with session_factory() as db:
+        if db.get(User, SYNC_ACTOR_ID) is None:
+            db.add(User(id=SYNC_ACTOR_ID, display_name="同步任务处理器", role=Role.ADMIN.value,
+                        department="system", active=False))
         for alias, (name, role, department) in DEV_DIRECTORY.items():
             if db.get(User, DEV_IDS[alias]) is None:
                 db.add(
