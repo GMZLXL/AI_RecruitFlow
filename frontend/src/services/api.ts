@@ -27,6 +27,11 @@ export type DashboardData = Schemas['DashboardData'];
 export type IngestResult = Schemas['IngestionResult'];
 export type Pagination = Schemas['Pagination'];
 export type User = Schemas['UserRead'];
+export type Notification = Schemas['NotificationRead'];
+export type Inbox = Schemas['InboxRead'];
+export type ReminderPolicy = Schemas['ReminderPolicyRead'];
+export type ReminderPolicyUpdate = Schemas['ReminderPolicyUpdate'];
+export type WecomUser = Schemas['WecomUser'];
 export type Confirmation = Schemas['ConfirmationRead'];
 export type Extraction = Schemas['Extraction'];
 export type ResolveRequest = Schemas['ResolveRequest'];
@@ -61,6 +66,16 @@ type PolicyResponse = operations['settings_policy_api_v1_settings_policy_get']['
 type IntegrationsResponse = operations['integration_status_api_v1_integrations_status_get']['responses'][200]['content']['application/json'];
 
 export const api = {
+  wecomStatus: async (signal?: AbortSignal) => (await client.get<Schemas['Response_WecomStatus_']>('/wecom/status', { signal })).data.data,
+  reminderPolicy: async (signal?: AbortSignal) => (await client.get<Schemas['Response_ReminderPolicyRead_']>('/settings/reminders', { signal })).data.data,
+  updateReminderPolicy: async (row: ReminderPolicy, data: ReminderPolicyUpdate, key: string) => (await client.patch<Schemas['Response_ReminderPolicyRead_']>('/settings/reminders', data, { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
+  wecomUsers: async (page = 1, signal?: AbortSignal) => (await client.get<Schemas['ListResponse_WecomUser_']>('/wecom/users', { params: { page, page_size: 8 }, signal })).data,
+  bindWecomUser: async (row: WecomUser, data: Schemas['WecomBinding'], key: string) => (await client.patch<Schemas['Response_WecomUser_']>(`/wecom/users/${row.id}`, data, { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
+  mockWecom: async (data: Schemas['MockMessage'], key: string) => (await client.post<Schemas['Response_InboxRead_']>('/wecom/mock/messages', data, { headers: { 'Idempotency-Key': key } })).data.data,
+  wecomInbox: async (page = 1, signal?: AbortSignal) => (await client.get<Schemas['ListResponse_InboxRead_']>('/wecom/inbox', { params: { page, page_size: 8 }, signal })).data,
+  notifications: async (page = 1, signal?: AbortSignal) => (await client.get<Schemas['ListResponse_NotificationRead_']>('/notifications', { params: { page, page_size: 8 }, signal })).data,
+  retryNotification: async (row: Notification, change_reason: string, key: string) => (await client.post<Schemas['Response_NotificationRead_']>(`/notifications/${row.id}/retry`, { change_reason } satisfies Schemas['TaskRetry'], { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
+  retryInbox: async (row: Inbox, change_reason: string, key: string) => (await client.post<Schemas['Response_InboxRead_']>(`/wecom/inbox/${row.id}/retry`, { change_reason } satisfies Schemas['TaskRetry'], { headers: { 'If-Match': row.version, 'Idempotency-Key': key } })).data.data,
   me: async () => (await client.get<MeResponse>('/me')).data.data,
   devUsers: async () => (await client.get<UsersResponse>('/dev/users')).data.data,
   selectDevUser: (id: string) => { sessionStorage.setItem('recruitflow.dev_user', id); window.location.reload(); },

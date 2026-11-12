@@ -79,4 +79,4 @@ class IntegrationStatus(Schema):
     model: str | None = None
     tencent_docs: Literal["blocked_by_credentials", "blocked_by_schema"] = "blocked_by_credentials"
     sync_provider: Literal["mock", "tencent_docs"] = "mock"
-    wecom: Literal["not_connected"] = "not_connected"
+    wecom: Literal["mock_only", "disabled", "blocked_by_credentials", "configured_not_verified"] = "mock_only"

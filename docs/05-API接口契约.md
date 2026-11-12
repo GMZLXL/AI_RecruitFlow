@@ -1,5 +1,29 @@
 # 05｜REST API 接口契约（v1）
 
+## S5 当前增量（优先于历史契约）
+
+当前OpenAPI 0.6.0、37个路径；统一Pydantic在schemas/wecom.py，生成OpenAPI和前端TS。所有JSON接口沿用data/request_id与分页/错误信封；回调特例按平台协议使用纯文本响应。
+
+| 方法/路径（前缀/api/v1） | 行为 |
+|---|---|
+| GET /webhooks/wecom | msg_signature/timestamp/nonce/echostr；SDK验签并解密，返回原样明文text/plain；无开发身份头 |
+| POST /webhooks/wecom | 同签名参数（不含echostr），application/xml加密体≤64KiB；校验企业/AgentID与内部发送人，持久化后返回success；不等待AI |
+| GET /wecom/status | 管理员；provider、callback/sending配置状态、worker_enabled、callback_path和边界说明，不回显密钥 |
+| POST /wecom/mock/messages | 开发Mock、HR/管理员；body message_id(1~150)/text(1~2000)，Idempotency-Key；202 InboxRead，只代表已接收 |
+| GET /wecom/inbox | page/page_size；管理员全局，其余仅本人；不返回文本、哈希、nonce或token |
+| POST /wecom/inbox/{id}/retry | 管理员；If-Match接收任务version、Idempotency-Key、change_reason；仅failed且有脱敏工作文本，可恢复；先复核actor权限 |
+| GET /notifications | page/page_size；管理员全局，其余仅本人且仍有业务访问权限；状态和最小通知内容，无外部UserID/Token |
+| POST /notifications/{id}/retry | 管理员；If-Match通知version、Idempotency-Key、change_reason；仅failed/blocked；uncertain/accepted/mock_sent禁止重发 |
+| GET/PATCH /settings/reminders | 管理员读取/更新单例；PATCH要If-Match+幂等键，body enabled/interview_hours(1~168)/feedback_hours(1~720)/stalled_days(1~365)/change_reason |
+| GET /wecom/users | 管理员；分页读取内部用户及外部UserID映射，不包含凭证 |
+| PATCH /wecom/users/{id} | 管理员；If-Match用户version+幂等键；external_userid或null解除绑定，change_reason必填；唯一约束，不允许@all |
+
+回调验签/过期/企业/应用/未知发送人403，结构错误400，过大413，未启用或缺配置503；同MsgId不同正文409。认证后非文本事件仅ACK，不进入AI；不读取普通群聊。重复合法回调返回success且业务一次；nonce允许原密文重试，拒绝相同timestamp+nonce的不同密文。签名窗口±300秒。真实source=wecom只能经回调进入，手工ingestions拒绝伪装；wecom_mock保留兼容。
+
+通知状态pending/processing/mock_sent/accepted/blocked/failed/uncertain/cancelled；API接受不代表设备收到/成员已读。平台msgid只保存实际响应；Mock前缀MOCK-NOTICE。失败只返回白名单安全码，网络异常不回传完整URL/响应。配置状态永远是mock_only/disabled/blocked_by_credentials/configured_not_verified，不凭配置显示connected。通用integrations/status的wecom同步更新为以上枚举。
+
+所有配置/映射/任务重试同事务审计和outbox；无Key不调用网络。提醒规则更改不改变S4 Tasks实时事实分类和7天停滞阈值。
+
 ## S4 当前增量（优先于历史契约）
 
 运行OpenAPI为0.5.0、27个实际路径。唯一Pydantic源仍位于schemas，所有前端领域类型继续生成，页面不复制业务协议。

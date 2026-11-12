@@ -9,17 +9,22 @@ from .models import (
     IngestionJob,
     Interview,
     MockSheetRecord,
+    Notification,
     Offer,
     Outbox,
     Position,
     Reminder,
+    ReminderPolicy,
     RemoteLink,
     SyncWorkerLease,
     User,
+    WecomInbox,
+    WecomReplay,
 )
 from .session import DATABASE_URL, SCHEMA_REVISION, SessionLocal, engine, get_db, init_db
 
 __all__ = [
+    "Notification", "ReminderPolicy", "WecomInbox", "WecomReplay",
     "Base",
     "Offer",
     "MockSheetRecord",

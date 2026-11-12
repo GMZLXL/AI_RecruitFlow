@@ -137,7 +137,8 @@ def test_empty_dashboard_and_integrations(client):
     assert overview["by_stage"] == {}
     integrations = client.get("/api/v1/integrations/status").json()["data"]
     assert integrations["tencent_docs"] == "blocked_by_credentials"
-    assert integrations["deepseek"] == integrations["wecom"] == "not_connected"
+    assert integrations["deepseek"] == "not_connected"
+    assert integrations["wecom"] == "mock_only"
 
 
 def test_terminal_and_backward_updates_require_confirmation(client):

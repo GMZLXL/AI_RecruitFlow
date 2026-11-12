@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: AI RecruitFlow Mock API
-  description: S4 recruitment workbench and independent Offer facts; Tencent writes
-    remain blocked until authorized schemas are verified.
-  version: 0.5.0
+  description: S5 WeCom encrypted callbacks, durable inbox and notifications; real
+    authorization and production identity remain unverified.
+  version: 0.6.0
 paths:
   /api/v1/health:
     get:
@@ -3502,6 +3502,975 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Internal Server Error
+  /api/v1/webhooks/wecom:
+    get:
+      summary: Verify Url
+      operationId: verify_url_api_v1_webhooks_wecom_get
+      parameters:
+      - name: msg_signature
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 40
+          maxLength: 40
+          title: Msg Signature
+      - name: timestamp
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 12
+          title: Timestamp
+      - name: nonce
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+          title: Nonce
+      - name: echostr
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 65536
+          title: Echostr
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Callback
+      operationId: callback_api_v1_webhooks_wecom_post
+      parameters:
+      - name: msg_signature
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 40
+          maxLength: 40
+          title: Msg Signature
+      - name: timestamp
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 12
+          title: Timestamp
+      - name: nonce
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+          title: Nonce
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              type: string
+              maxLength: 65536
+  /api/v1/wecom/status:
+    get:
+      summary: Wecom Status
+      operationId: wecom_status_api_v1_wecom_status_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_WecomStatus_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/wecom/mock/messages:
+    post:
+      summary: Mock Message
+      operationId: mock_message_api_v1_wecom_mock_messages_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MockMessage'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_InboxRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/wecom/inbox:
+    get:
+      summary: Inbox
+      operationId: inbox_api_v1_wecom_inbox_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_InboxRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/wecom/inbox/{task_id}/retry:
+    post:
+      summary: Retry Inbox
+      operationId: retry_inbox_api_v1_wecom_inbox__task_id__retry_post
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Task Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRetry'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_InboxRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/notifications:
+    get:
+      summary: Notifications
+      operationId: notifications_api_v1_notifications_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_NotificationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/notifications/{task_id}/retry:
+    post:
+      summary: Retry Notification
+      operationId: retry_notification_api_v1_notifications__task_id__retry_post
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Task Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRetry'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_NotificationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/settings/reminders:
+    get:
+      summary: Reminder Policy
+      operationId: reminder_policy_api_v1_settings_reminders_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_ReminderPolicyRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Reminder Policy Update
+      operationId: reminder_policy_update_api_v1_settings_reminders_patch
+      parameters:
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReminderPolicyUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_ReminderPolicyRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/wecom/users:
+    get:
+      summary: Users
+      operationId: users_api_v1_wecom_users_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_WecomUser_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/wecom/users/{user_id}:
+    patch:
+      summary: Bind User
+      operationId: bind_user_api_v1_wecom_users__user_id__patch
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: User Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WecomBinding'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_WecomUser_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
 components:
   schemas:
     ApiError:
@@ -4257,6 +5226,63 @@ components:
       required:
       - user
       title: Identity
+    InboxRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        provider:
+          type: string
+          enum:
+          - mock
+          - wecom
+          title: Provider
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
+          title: Status
+        ingestion_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ingestion Id
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        attempts:
+          type: integer
+          title: Attempts
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - provider
+      - status
+      - ingestion_id
+      - last_error
+      - attempts
+      title: InboxRead
     IngestionRead:
       properties:
         id:
@@ -4338,6 +5364,7 @@ components:
           enum:
           - manual
           - wecom_mock
+          - wecom
           title: Source
           default: manual
         execute_if_unambiguous:
@@ -4472,9 +5499,13 @@ components:
           default: mock
         wecom:
           type: string
-          const: not_connected
+          enum:
+          - mock_only
+          - disabled
+          - blocked_by_credentials
+          - configured_not_verified
           title: Wecom
-          default: not_connected
+          default: mock_only
       additionalProperties: false
       type: object
       title: IntegrationStatus
@@ -4710,6 +5741,25 @@ components:
       - request_id
       - pagination
       title: ListResponse[HistoryRead]
+    ListResponse_InboxRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/InboxRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[InboxRead]
     ListResponse_IngestionRead_:
       properties:
         data:
@@ -4748,6 +5798,25 @@ components:
       - request_id
       - pagination
       title: ListResponse[InterviewRead]
+    ListResponse_NotificationRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/NotificationRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[NotificationRead]
     ListResponse_PositionRead_:
       properties:
         data:
@@ -4805,6 +5874,125 @@ components:
       - request_id
       - pagination
       title: ListResponse[TaskRead]
+    ListResponse_WecomUser_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/WecomUser'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[WecomUser]
+    MockMessage:
+      properties:
+        message_id:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Message Id
+        text:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Text
+      additionalProperties: false
+      type: object
+      required:
+      - message_id
+      - text
+      title: MockMessage
+    NotificationRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        provider:
+          type: string
+          enum:
+          - mock
+          - wecom
+          title: Provider
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          - mock_sent
+          - accepted
+          - blocked
+          - failed
+          - uncertain
+          - cancelled
+          title: Status
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Id
+        recipient_name:
+          type: string
+          title: Recipient Name
+        text:
+          type: string
+          title: Text
+        attempts:
+          type: integer
+          title: Attempts
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        platform_message_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Platform Message Id
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - provider
+      - status
+      - application_id
+      - recipient_name
+      - text
+      - attempts
+      - last_error
+      - platform_message_id
+      - completed_at
+      title: NotificationRead
     OfferCreate:
       properties:
         sent_at:
@@ -4948,7 +6136,7 @@ components:
         notice:
           type: string
           title: Notice
-          default: 待办来自实际记录；自动提醒与企微推送尚未启用。模拟身份仅用于开发。
+          default: 待办来自实际记录；管理员可配置提醒，通知区分模拟发送与平台接受。模拟身份仅用于开发。
       additionalProperties: false
       type: object
       required:
@@ -5109,6 +6297,86 @@ components:
       - positions
       - owners
       title: RecruitmentOptions
+    ReminderPolicyRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        enabled:
+          type: boolean
+          title: Enabled
+        interview_hours:
+          type: integer
+          title: Interview Hours
+        feedback_hours:
+          type: integer
+          title: Feedback Hours
+        stalled_days:
+          type: integer
+          title: Stalled Days
+        timezone:
+          type: string
+          const: Asia/Shanghai
+          title: Timezone
+          default: Asia/Shanghai
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - enabled
+      - interview_hours
+      - feedback_hours
+      - stalled_days
+      title: ReminderPolicyRead
+    ReminderPolicyUpdate:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        interview_hours:
+          type: integer
+          maximum: 168.0
+          minimum: 1.0
+          title: Interview Hours
+        feedback_hours:
+          type: integer
+          maximum: 720.0
+          minimum: 1.0
+          title: Feedback Hours
+        stalled_days:
+          type: integer
+          maximum: 365.0
+          minimum: 1.0
+          title: Stalled Days
+        change_reason:
+          type: string
+          maxLength: 300
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - enabled
+      - interview_hours
+      - feedback_hours
+      - stalled_days
+      - change_reason
+      title: ReminderPolicyUpdate
     ResolutionResult:
       properties:
         confirmation_id:
@@ -5283,6 +6551,19 @@ components:
       - data
       - request_id
       title: Response[Identity]
+    Response_InboxRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/InboxRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[InboxRead]
     Response_IngestionResult_:
       properties:
         data:
@@ -5322,6 +6603,19 @@ components:
       - data
       - request_id
       title: Response[InterviewRead]
+    Response_NotificationRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/NotificationRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[NotificationRead]
     Response_OfferRead_:
       properties:
         data:
@@ -5374,6 +6668,19 @@ components:
       - data
       - request_id
       title: Response[RecruitmentOptions]
+    Response_ReminderPolicyRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/ReminderPolicyRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[ReminderPolicyRead]
     Response_ResolutionResult_:
       properties:
         data:
@@ -5441,6 +6748,32 @@ components:
       - data
       - request_id
       title: Response[Union[OfferRead, NoneType]]
+    Response_WecomStatus_:
+      properties:
+        data:
+          $ref: '#/components/schemas/WecomStatus'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[WecomStatus]
+    Response_WecomUser_:
+      properties:
+        data:
+          $ref: '#/components/schemas/WecomUser'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[WecomUser]
     Response_list_UserRead__:
       properties:
         data:
@@ -5733,6 +7066,18 @@ components:
       - source_id
       - title
       title: TaskRead
+    TaskRetry:
+      properties:
+        change_reason:
+          type: string
+          maxLength: 300
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: TaskRetry
     UserRead:
       properties:
         id:
@@ -5773,6 +7118,108 @@ components:
       - department
       - active
       title: UserRead
+    WecomBinding:
+      properties:
+        external_userid:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+            pattern: ^[A-Za-z0-9_@.\-]+$
+          - type: 'null'
+          title: External Userid
+        change_reason:
+          type: string
+          maxLength: 300
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: WecomBinding
+    WecomStatus:
+      properties:
+        provider:
+          type: string
+          enum:
+          - mock
+          - wecom
+          title: Provider
+        callback:
+          type: string
+          enum:
+          - mock_only
+          - disabled
+          - blocked_by_credentials
+          - configured_not_verified
+          title: Callback
+        sending:
+          type: string
+          enum:
+          - mock_only
+          - disabled
+          - blocked_by_credentials
+          - configured_not_verified
+          title: Sending
+        worker_enabled:
+          type: boolean
+          title: Worker Enabled
+        callback_path:
+          type: string
+          title: Callback Path
+          default: /api/v1/webhooks/wecom
+        notice:
+          type: string
+          title: Notice
+          default: 只接收主动发给自建应用的消息；平台接受不代表用户已读，模拟发送不代表真实投递。
+      additionalProperties: false
+      type: object
+      required:
+      - provider
+      - callback
+      - sending
+      - worker_enabled
+      title: WecomStatus
+    WecomUser:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        display_name:
+          type: string
+          title: Display Name
+        role:
+          type: string
+          title: Role
+        external_wecom_userid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Wecom Userid
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - display_name
+      - role
+      - external_wecom_userid
+      title: WecomUser
     WeeklyCount:
       properties:
         week:

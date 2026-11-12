@@ -12,6 +12,7 @@ from app.db import (
 )
 from app.integrations.smartsheet.factory import sync_provider
 from app.integrations.smartsheet.tencent import tencent_status
+from app.integrations.wecom.config import status as wecom_status
 
 from .common import DB, Actor, envelope
 
@@ -44,7 +45,7 @@ def development_users(request: Request, db: DB, actor: Actor):
 def integration_status(request: Request, actor: Actor):
     require_admin(actor)
     data = s.IntegrationStatus(mode="hybrid" if os.getenv("APP_MODE") == "hybrid" else "mock",
-                               sync_provider=sync_provider(), tencent_docs=tencent_status())
+                               sync_provider=sync_provider(), tencent_docs=tencent_status(), wecom=wecom_status().callback)
     if os.getenv("AI_PROVIDER", "mock") == "deepseek":
         data.parser_provider = "deepseek"
         data.model = os.getenv("DEEPSEEK_MODEL") or None

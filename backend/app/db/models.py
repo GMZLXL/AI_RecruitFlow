@@ -204,6 +204,59 @@ class Reminder(Entity, Base):
     status: Mapped[str] = mapped_column(String(30), default="pending")
     sent_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     dedupe_key: Mapped[str] = mapped_column(String(150), unique=True)
+    source_id: Mapped[str | None] = mapped_column(String(36))
+    recipient_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+
+
+class ReminderPolicy(Entity, Base):
+    __tablename__ = "reminder_policy"
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    interview_hours: Mapped[int] = mapped_column(Integer, default=24)
+    feedback_hours: Mapped[int] = mapped_column(Integer, default=24)
+    stalled_days: Mapped[int] = mapped_column(Integer, default=7)
+
+
+class WecomInbox(Entity, Base):
+    __tablename__ = "wecom_inbox"
+    __table_args__ = (Index("ix_wecom_inbox_status_retry", "status", "next_retry_at"),)
+    event_key: Mapped[str] = mapped_column(String(64), unique=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    message_hash: Mapped[str] = mapped_column(String(64))
+    safe_text: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    ingestion_id: Mapped[str | None] = mapped_column(ForeignKey("ingestion_jobs.id"))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(80))
+    processing_token: Mapped[str | None] = mapped_column(String(36))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_retry_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class WecomReplay(Base):
+    __tablename__ = "wecom_replays"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payload_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+
+
+class Notification(Entity, Base):
+    __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notification_status_retry", "status", "next_retry_at"),)
+    dedupe_key: Mapped[str] = mapped_column(String(150), unique=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    recipient_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    application_id: Mapped[str | None] = mapped_column(ForeignKey("applications.id"))
+    reminder_id: Mapped[str | None] = mapped_column(ForeignKey("reminders.id"), unique=True)
+    text: Mapped[str] = mapped_column(String(1000))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(80))
+    platform_message_id: Mapped[str | None] = mapped_column(String(150))
+    processing_token: Mapped[str | None] = mapped_column(String(36))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_retry_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
 class AuditLog(Base):

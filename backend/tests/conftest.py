@@ -11,6 +11,7 @@ os.environ["DATABASE_URL"] = "sqlite:///" + str(Path(_tmp.name) / "test.db")
 os.environ["APP_MODE"] = "mock"
 os.environ["APP_ENV"] = "development"
 os.environ["SYNC_WORKER_ENABLED"] = "false"
+os.environ["WECOM_WORKER_ENABLED"] = "false"
 
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -42,6 +43,11 @@ def client():
 
 @pytest.fixture(autouse=True)
 def isolated_parser_config(monkeypatch):
+    monkeypatch.setenv("WECOM_PROVIDER", "mock")
+    monkeypatch.setenv("WECOM_CALLBACK_ENABLED", "false")
+    monkeypatch.setenv("WECOM_SEND_ENABLED", "false")
+    for key in ("WECOM_CORP_ID", "WECOM_AGENT_ID", "WECOM_CALLBACK_TOKEN", "WECOM_ENCODING_AES_KEY", "WECOM_SECRET"):
+        monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("AI_PROVIDER", "mock")
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.setenv("SMARTSHEET_PROVIDER", "mock")

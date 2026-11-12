@@ -1,5 +1,7 @@
 # 后端服务（开发 Mock）
 
+S5新增0005_s5、schemas/wecom、验签/AES适配器、持久接收与通知/提醒队列、配置与用户绑定API。SDK/密码库已锁定，安装requirements.lock后迁移；无Key保持Mock，真实企微未联调，生产身份仍待S6。`npm run smoke:wecom`验证后台闭环，不发送外部消息。
+
 当前S4：新增独立offers、工作台聚合统计/安全历史/待办投影/岗位负责人选项与规则读取。0004_s4迁移已验证；前后端契约源不变。根npm run demo:seed生成24条明确标记的虚构申请；npm run smoke:workbench验证Offer与录用分离及权限。详情见根README和实施报告，下方保留基础运行方法。
 
 S3本机开发：已实现领域模型、Alembic、CRUD/权限/状态机/版本、Parser与人工审核、异步outbox与持久Mock投影。main仅装配应用，api/services/db/schemas/core/integrations/jobs分层；脚本按contracts、migrations、smoke、integrations分目录。生产认证与真实MCP/企微未接入；腾讯适配器因凭证/实测Schema缺失而阻断写入。

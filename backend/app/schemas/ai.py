@@ -43,7 +43,7 @@ class Extraction(Schema):
 class IngestionRequest(Schema):
     text: NonEmpty = Field(max_length=2000)
     external_event_id: NonEmpty | None = Field(default=None, max_length=150)
-    source: Literal["manual", "wecom_mock"] = "manual"
+    source: Literal["manual", "wecom_mock", "wecom"] = "manual"
     execute_if_unambiguous: bool = True
 
 

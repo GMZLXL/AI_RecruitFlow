@@ -38,7 +38,7 @@ def result_for_job(job: IngestionJob) -> s.IngestionResult:
     return s.IngestionResult(ingestion_id=job.id, status="parsing", reason="事件正在处理中")
 
 
-def claim(actor_id: str, req: s.IngestionRequest):
+def claim(actor_id: str, req: s.IngestionRequest, reference_time=None):
     external_id = req.external_event_id or new_id()
     digest = hashlib.sha256(req.text.encode()).hexdigest()
     with SessionLocal() as db:
@@ -88,6 +88,7 @@ def claim(actor_id: str, req: s.IngestionRequest):
             record_change(db, job, actor, "resume_ingestion", before)
         else:
             job = IngestionJob(
+                received_at=reference_time or utcnow(),
                 actor_id=actor_id,
                 source=req.source,
                 external_event_id=external_id,
@@ -144,11 +145,11 @@ def complete_job(db, job, actor, outcome: ParseOutcome, result: s.IngestionResul
     record_change(db, job, actor, "finish_ingestion", before)
 
 
-async def ingest(actor_id: str, req: s.IngestionRequest, parser: Parser) -> s.IngestionResult:
+async def ingest(actor_id: str, req: s.IngestionRequest, parser: Parser, *, reference_time=None) -> s.IngestionResult:
     try:
-        received = claim(actor_id, req)
+        received = claim(actor_id, req, reference_time)
     except IntegrityError:
-        received = claim(actor_id, req)  # the other claim committed its unique event first
+        received = claim(actor_id, req, reference_time)  # the other claim committed its unique event first
     if isinstance(received, s.IngestionResult):
         return received
     job_id, token, version, reference_time = received

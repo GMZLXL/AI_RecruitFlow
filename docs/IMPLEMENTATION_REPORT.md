@@ -1,5 +1,58 @@
 # AI RecruitFlow 实施报告
 
+## S5 实际交付（2026-11-12）
+
+```text
+阶段：S5
+已完成：自建应用SDK验签/AES回调；快速持久ACK/异步同一ingestion/MsgId与nonce去重；用户映射及后台权限复核；持久通知、状态与管理员重试；四类事实提醒、阈值配置与去重；设置指引、模拟投稿及本人通知页面。
+本阶段变更文件：schemas/wecom及生成OpenAPI 0.6.0/37路径/TS，0005_s5与models，integrations/wecom、services/wecom/notifications、jobs/wecom_worker、api/v1/wecom与main；前端features/wecom、Settings/Tasks、api及useResource；S5回归/HTTP脚本/依赖锁/文档，详见下方。
+数据库迁移：0005_s5新增wecom_inbox/wecom_replays/notifications/reminder_policy，reminders增加源/接收人；本机停API、SQLite一致备份后升级，db:check无漂移；空库升降/重升、旧库复制兼容及PostgreSQL离线DDL回归通过。
+运行的命令：requirements锁定安装；npm run contracts:generate/check、check、db:upgrade/db:check、smoke:wecom、smoke:http；compileall；真实浏览器1440/1024/390及界面评审。
+测试结果：最终npm run check完整通过；后端168通过（27.66s，含36项S5新增），前端16通过/4文件（26.97s），失败0、跳过0；契约/lint/类型通过，build通过（13.61s）。无删除失败测试或关闭安全检查。
+未完成/阻塞：真实企微管理员授权、凭证、限定HTTPS回调URL及平台投递尚未联调；DeepSeek/MCP真实联调依旧受凭证/Schema阻塞。当前默认Mock，不声称真实通知送达。
+重要风险：单实例开发身份，生产认证/部署待S6；平台接受不是成员收到/已读；不明结果只能人工核实，当前不提供强制重发；已取消的同事实提醒不自动重开；保留测试客户端弃用及536.72KB主包警告；PostgreSQL和跨平台未实机验证。
+下一阶段：S6（安全、部署与运维）。
+```
+
+### 数据、权限和任务边界
+
+统一Pydantic先定义Inbox/Notification/Policy/Status/Binding，随后迁移、业务服务、API和前端消费。接收与投递状态独立于招聘stage；通知provider创建后固定，不把旧Mock队列迁往真实系统。映射只管理员修改，唯一外部UserID映射到既有内部用户；不会赋予新角色。后台再次查active/role/申请范围，模型不获得写权限，录用/淘汰规则不变。
+
+回调默认禁用；真实provider需显式hybrid，回调和发送独立开关。SDK采用第三方wechatpy 1.8.18/cryptography，未自行编造AES算法。签名/时间窗、receiveId/企业/AgentID、UTF-8/XML/DTD/重复字段、大小、nonce摘要、MsgId均受控；只有主动发给自建应用的文本进入工作流，非文本验签后仅ACK，不接入普通群聊/会话存档。首次接收只保存哈希和脱敏工作文本，成功清理文本，API/audit/outbox不复制文本；失败暂保留供恢复。
+
+POST事务提交接收任务即返回success；Mock为202已接收。后台以固定事件键调用同一S2 ingestion；保留原接收时点，跨日处理不移动相对日期。接收150秒租约，S2自身120秒租约仍生效；重复与旧token不重复写。配置/映射/接收/通知/提醒及其状态变化同事务audit/outbox；网络调用在事务之外。
+
+通知状态为pending/processing/mock_sent/accepted/blocked/failed/uncertain/cancelled；每条单接收人、无广播，仅最小模板及申请编号，不发送候选姓名、联系方式、评价或聊天全文。发送采用官方固定HTTPS路径，token进程内缓存，无重定向/任意URL。获取token故障最多3次退避，通知POST不盲目重试；errcode或无效接收人不能记成功，缺msgid/超时/不明HTTP结果保持uncertain。真实120秒领取过期同样uncertain，Mock可重放。管理员重试限明确failed/blocked，必须理由、版本和幂等键。
+
+提醒默认关闭，阈值24小时提前、24小时未反馈、7天停滞；另含最新申请投影故障。基于DB事实生成，类型/源ID/时点/负责人唯一键去重。发送前核对规则、事实、终态/删除、owner和可见范围，已完成/已恢复/权限变化的提醒cancelled。S4待办固定7天口径不变；规则单独控制通知。每2秒处理最多10项接收、20项通知，每30秒扫描提醒，无新增Redis/Celery服务。
+
+### 界面与实测证据
+
+设置保留现有Ant Design：接入/绑定、提醒规则、模拟投稿三标签；凭证只在服务端。通知记录在管理员设置及用户待办复用，文字区分模拟与平台接受；结果不明无重发按钮。配置保存可见确认；局部刷新保留草稿，显示服务器最新已保存数据/version供对照；连接刷新不卸载表单/改变标签。
+
+真实HTTP `smoke:wecom`通过：持久ACK→同消息三次只更新一次→后台AI→一条MOCK-NOTICE模拟通知→RBAC→未配置回调拒绝。保留虚构申请A_S5_99DFB29F、A_S5_413775E9；原`smoke:http`全链路仍通过并保留其虚构记录。没有对外发送消息或访问真实企微数据。
+
+浏览器1440/1024/390实测：390提交s5-ui-mobile-99DFB29F，将上述虚构申请从筛选推进一面，刷新显示已处理及模拟发送；1024文档宽1009、390文档宽375（滚动条宽）无页面横向溢出。管理员保存规则始终关闭且24/24/7；模拟另一个请求只递增配置版本，旧Web版本2真实提交409，刷新到3后草稿和提醒标签保留，再提交成功显示关闭/版本4。配置值未改变。
+
+界面静态检测只运行一次为[]。独立评审首次要求M1保存确认、M2保留草稿的冲突恢复，已一批修复并复验；最终disposition **Ship**，无开放material findings。
+
+| 评审项 | 最终结果 |
+|---|---|
+| M1 保存确认 | Resolved：binding和规则显示role=status及保存版本 |
+| M2 版本恢复/草稿 | Resolved：局部版本刷新、最新值比较、连接刷新保持标签/表单 |
+
+开发热更新修改hook依赖数量时出现旧HMR告警；最终完整重载后的新增console error=[]，不将旧开发日志伪报为生产缺陷或隐藏。多尺寸/成功/冲突截图保存于忽略的.tools/s5-*.jpg；最终截图s5-settings-final.jpg，不纳入Git。浏览器恢复默认视口，页面保留供查看。界面文档记录在frontend/DESIGN.md，产品记录旧schema提示未擅自迁移。
+
+### 变更及验证限制
+
+后端新增schemas/wecom、迁移0005_s5、integrations/wecom/{config,callback,sender}、services/wecom/notifications、jobs/wecom_worker、api/v1/wecom；调整main生命周期、模型/出口、integration状态、内部ingestion日期基准和隐私快照。新tests/integration/test_s5.py、unit/test_wecom_sender.py；scripts/smoke/wecom.py及根命令；requirements.txt/lock增加SDK和密码依赖。前端新增features/wecom及wecom.test，保留既有页面风格与目录结构；useResource可选保留旧值仅用于配置恢复。API/数据字典/接入与运行/测试/扩展/目录文档、README和状态同步。
+
+回归包括异常签名、过期/未来/nonce、错企业/应用、未知发送人、DTD/重复字段/超大、并发去重、延迟基准、权限失效、审计故障回滚；token/发送响应、无网络Mock、失败/不明、四类提醒去重和过期取消、通知范围、事务外IO和token确认。前端新增完整投稿/绑定/规则/重试交互：虚拟Select测试需点击真实可见选项，不能点击仅供读屏的虚拟option节点；多步AntD流程给10秒测试时限，等待版本加载完成再保存，未修改业务安全检查。
+
+最终串行check全通过：168后端、16前端，失败0/跳过0；类型与契约一致。组件回归保留原安全和业务断言，使用真实可见的虚拟Select选项修正测试交互，多步流程等待加载完成；未删除失败测试或关闭安全检查。真实管理员GET验证、成员投递/可见范围、生产认证、实际PostgreSQL和Linux/macOS未验收；官方页面本次无法直接抓取，SDK及官方入口依据见docs/08。S5不包括S6生产安全/部署，不宣称可上线。
+
+以下为S4及更早阶段历史记录。
+
 ## S4 实际交付（2026-11-12）
 
 ```text

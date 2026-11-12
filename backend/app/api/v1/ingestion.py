@@ -27,6 +27,10 @@ async def ingestion(
     parser: Annotated[Parser, Depends(get_parser)],
 ):
     require_writer(actor)
+    if req.source == "wecom":
+        from app.services.common import fail
+
+        fail(403, "VERIFIED_CALLBACK_REQUIRED", "真实企微来源仅允许验签回调入口")
     actor_id = actor.id
     db.close()  # release the authentication read transaction before any parser/network work
     return envelope(request, await ingest(actor_id, req, parser))

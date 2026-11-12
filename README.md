@@ -2,7 +2,7 @@
 
 招聘记录自动化系统：React/TypeScript/Vite/Ant Design + FastAPI/Pydantic/SQLAlchemy。先运行不需要任何 Key 的 Mock，再按 S1~S7 完成业务和授权接入。
 
-**当前为 S4**：七个业务页面、数据库看板/筛选/待办/详情历史、独立Offer发出/接受/拒绝记录、移动端审核与权限路由已实现。按要求加入24条虚构申请、23位候选人和4个演示岗位，支持幂等重跑；图表读取数据库，不使用硬编码业务指标。真实DeepSeek/MCP/企微尚未联调，生产/live模式仍拒绝启动。
+**当前为 S5**：在S4七页工作台和虚构样本基础上，新增企微自建应用验签/AES回调、持久异步接收、消息去重、应用通知和可配置提醒。无Key默认Mock，界面区分模拟发送、平台接受和结果不明；真实DeepSeek/MCP/企微尚未联调，生产/live模式仍拒绝启动。
 
 ## 工作区
 
@@ -79,6 +79,7 @@ npm run contracts:check
 npm run db:check           # 模型与迁移漂移检查
 npm run integrations:tencent:discover # 只读工具发现；缺Token退出2，不会调用业务工具
 npm run smoke:workbench   # 服务启动、demo:seed后验证Offer/看板/权限，保留1条虚构申请
+npm run smoke:wecom       # 无Key企微接收→异步AI处理→模拟通知；保留1条虚构申请
 npm run test:api          # pytest
 npm run test:web          # Vitest组件/路由/错误/日期测试
 ```
@@ -100,6 +101,8 @@ Unix改用`.venv/bin/python`。命令保留原库和备份，目标文件必须�
 
 ## 当前验证边界
 
+S5统一OpenAPI为0.6.0/37路径；新增0005_s5（接收任务、通知、防重放、提醒规则，扩展reminders关联）。本机已先停止API并将SQLite备份到忽略的.tools/backups，再执行db:upgrade/db:check；旧业务记录保留。升级已有工作区也需先停止API并备份，重新安装requirements.lock后迁移、启动。最终完整check通过：后端168项、前端16项，失败0/跳过0；S5多尺寸设置/投稿/实际409恢复及授权边界见实施报告。
+
 S4后端132项、前端12项回归通过；HTTP包括AI全链路及独立Offer/人工录用、筛选、历史和权限。浏览器检查七页、1440/1024/390px布局，并实际完成390px姓名消息审核、Offer反馈、跨部门403及负责人只读。生产构建预览的3个图表实际渲染，控制台无错误；不将此当成真实生产身份/第三方验收。PostgreSQL仅DDL离线编译，Linux/macOS未实机运行；保留1条测试客户端警告和535KB主分包警告。
 
 S4新增0004_s4迁移，仅增加offers表，旧申请的Offer状态保持未知。现有S3库停止后端、备份数据库后执行npm run db:upgrade；当前工作区已升级。前端按路由和图表模块加载，框架/图表引擎/渲染器独立分包；不通过提高阈值隐藏构建警告。
@@ -110,7 +113,7 @@ S2迁移为0002_s2，现有S1库运行`npm run db:upgrade`即可；启动自动�
 
 ## DeepSeek 配置与边界
 
-默认`APP_MODE=mock`、`AI_PROVIDER=mock`，无任何外部调用。若要测试真实模型，只在后端`.env`设置`APP_MODE=hybrid`、`AI_PROVIDER=deepseek`、`DEEPSEEK_API_KEY`及`DEEPSEEK_MODEL`；模型名不在代码写死，连接仅允许官方HTTPS地址。企业微信/腾讯文档仍模拟，生产认证尚未实现。
+默认`APP_MODE=mock`、`AI_PROVIDER=mock`，无任何外部调用。测试真实模型只在后端`.env`设置`APP_MODE=hybrid`、`AI_PROVIDER=deepseek`、`DEEPSEEK_API_KEY`及`DEEPSEEK_MODEL`；模型名不写死，仅允许官方HTTPS地址。其它连接器未显式启用时保持模拟；生产认证尚未实现。
 
 DeepSeek使用JSON Output与Pydantic，最多2次尝试；空白、截断、非法字段、超时、缺凭证转人工确认。手机号/邮箱/身份证/常见联系信息先脱敏；只保留哈希和不超过300字的脱敏摘要，不保存独立原文或模型原始响应。解析在数据库事务之外，落地前重新校验权限、状态和版本。未提供Key时显示blocked_by_credentials，不用Mock响应冒充真实调用。
 
@@ -119,6 +122,16 @@ Mock支持明确新增、唯一编号的阶段/面试结果、ISO时间及“明
 业务写入必需`Idempotency-Key`，修改/删除另需`If-Match`；AI接入使用外部事件ID。开发身份由服务端目录解析`X-Dev-User`，可用别名admin/hr-a/hr-b/manager-a；`DEV_AUTH_ENABLED=false`拒绝开发身份。浏览器只保存模拟用户ID，不保存Token，也不能自报role提升权限。
 
 已初始化本地Git仓库，使用main分支，尚未配置远程仓库。`.env`、数据库、日志、本地工具、个人资料不得纳入版本控制。
+
+## S5 企业微信与提醒
+
+默认WECOM_PROVIDER=mock、WECOM_WORKER_ENABLED=true，无需密钥。系统设置→企业微信与提醒提供接入指引、用户绑定、提醒规则和模拟投稿；待办页展示本人通知，管理员可看全局并重试明确失败任务。202仅表示持久接收，刷新记录或到AI录入查看实际处理结果。
+
+提醒默认关闭，按面试提前/反馈超时/停滞/同步故障生成同事实一次的通知；事实或权限变化时取消。配置保存有确认，冲突可刷新服务端版本并保留草稿，对照后重提。通知区分模拟发送、平台接受、待配置、明确失败、结果不明和已取消，不把accepted当已读；结果不明不能直接重发。
+
+真实测试需管理员提供CorpID、AgentID、Secret、回调Token及EncodingAESKey，只写服务端环境。APP_MODE=hybrid、WECOM_PROVIDER=wecom后，接收/发送开关分别显式开启。当前无真实凭证/公网校验，最多显示configured_not_verified；仅限隔离授权测试，生产身份/部署在S6。见[接入手册](docs/08-第三方系统接入手册.md)。
+
+GET验签解密echo，POST持久化后ACK，后台复用现有AI/审核/权限链路；timestamp/nonce/MsgId防重复。仅处理主动发给自建应用的文本，不监听普通群聊。成功即清理脱敏工作文本；网络调用在事务外，提醒和通知持久化并审计。单实例运行，WECOM_WORKER_ENABLED=false暂停处理但保留队列。
 
 ## S3 同步配置与故障演示
 

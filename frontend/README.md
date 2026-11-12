@@ -1,5 +1,7 @@
 # 前端工作台（开发 Mock）
 
+S5在系统设置新增企微指引/用户绑定、提醒规则和模拟投稿；Settings/Tasks复用通知状态表。配置刷新保留草稿与标签，展示最新版本供比较，保存有明确确认。领域类型仍从OpenAPI生成，无凭证字段；真实企微未授权联调。当前测试见实施报告，以下S4为历史基线。
+
 当前S4：Dashboard/Candidates/ApplicationDetail/AIInbox/Tasks/SyncCenter/Settings均可运行，路由延迟加载，图表使用ECharts按需模块。1440/1024/390px已实际检查，移动端可人工审核及登记Offer；负责人只读、同步管理仅管理员，服务端同样校验。
 
 Node要求22.13+（22.x）、24.x或26+；已实测24.14。`npm run test:web`运行Vitest/Testing Library的12项实际测试，根npm test同时运行后端。产品/界面事实见PRODUCT.md、DESIGN.md，其余命令见根README。

@@ -24,6 +24,7 @@
     "test:web": "npm run test --workspace frontend",
     "smoke:http": "node scripts/workspace/python.mjs -m scripts.smoke.http",
     "smoke:workbench": "node scripts/workspace/python.mjs -m scripts.smoke.workbench",
+    "smoke:wecom": "node scripts/workspace/python.mjs -m scripts.smoke.wecom",
     "smoke:sync-failure": "node scripts/workspace/python.mjs -m scripts.smoke.sync_failure",
     "demo:seed": "node scripts/workspace/python.mjs -m scripts.demo.seed",
     "integrations:tencent:discover": "node scripts/workspace/python.mjs -m scripts.integrations.tencent_discover",

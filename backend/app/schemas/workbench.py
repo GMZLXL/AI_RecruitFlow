@@ -94,4 +94,4 @@ class PolicyRead(Schema):
     timezone: Literal["Asia/Shanghai"] = "Asia/Shanghai"
     stalled_days: int = 7
     stage_transitions: dict[Stage, list[Stage]]
-    notice: str = "待办来自实际记录；自动提醒与企微推送尚未启用。模拟身份仅用于开发。"
+    notice: str = "待办来自实际记录；管理员可配置提醒，通知区分模拟发送与平台接受。模拟身份仅用于开发。"

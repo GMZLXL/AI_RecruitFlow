@@ -5,6 +5,7 @@ import { useResource } from '../features/shared/useResource';
 import { ErrorState, LoadState } from '../components/RemoteState';
 import PageHead from '../components/PageHead';
 import { STAGES } from '../features/recruitment/presentation';
+import WecomPanel from '../features/wecom/WecomPanel';
 
 export default function Settings({ identity }: { identity: User }) {
   const admin = identity.role === 'ADMIN';
@@ -31,7 +32,7 @@ export default function Settings({ identity }: { identity: User }) {
         { key: 'user', label: '当前身份', children: `${identity.display_name} · ${identity.role}` },
         { key: 'scope', label: '数据范围', children: admin ? '全局业务与同步管理' : identity.role === 'HR' ? '本人负责申请，可录入和审核' : '所属部门进度，只读' },
         { key: 'privacy', label: '敏感字段', children: '本版本不采集或返回联系方式；所有接口由后端授权' },
-        { key: 'reminder', label: '停滞阈值', children: policy.data ? `${policy.data.stalled_days}天未更新；提醒推送尚未启用` : '读取中' },
+        { key: 'reminder', label: '待办停滞阈值', children: policy.data ? `${policy.data.stalled_days}天未更新；自动提醒由管理员单独配置` : '读取中' },
       ]} />
       {policy.error && <ErrorState error={policy.error} retry={policy.reload} />}
       {policy.data && <p className="section-card">正常推进：{Object.values(STAGES).slice(0, 6).join(' → ')}。可人工记录淘汰或退出；终态逆转需审核。Offer接受和录用独立记录。</p>}
@@ -42,10 +43,11 @@ export default function Settings({ identity }: { identity: User }) {
           { key: 'parser', label: 'AI解析', children: `${connections.data.parser_provider === 'mock' ? 'Mock规则' : 'DeepSeek'} · ${connections.data.deepseek}` },
           { key: 'sheet', label: '腾讯文档', children: connections.data.tencent_docs === 'blocked_by_credentials' ? '缺少Token，真实接入阻塞' : '工具Schema与字段映射待验证' },
           { key: 'mode', label: '当前投影', children: connections.data.sync_provider === 'mock' ? '本机Mock智能表格' : '腾讯适配器（尚未验证，写入阻断）' },
-          { key: 'wecom', label: '企业微信', children: '未连接，回调与提醒在S5实施' },
+          { key: 'wecom', label: '企业微信', children: connections.data.wecom === 'mock_only' ? '模拟接入，详情见下方企微设置' : '独立配置状态，尚未完成真实联调' },
         ]} /><Alert type="warning" showIcon message="刷新只读取配置状态，不代表真实连通性验证通过。尚无经验证的腾讯字段映射；本页面不编造字段ID。" />
       </>}
     </Card>}
+    {admin && <WecomPanel />}
     <Card className="section-card" title="岗位字典" extra={<Button onClick={positions.reload}>刷新岗位</Button>}>
       {positions.error && <ErrorState error={positions.error} retry={positions.reload} />}
       <Table<Position> rowKey="id" loading={positions.loading} dataSource={positions.data?.data ?? []} scroll={{ x: 650 }}

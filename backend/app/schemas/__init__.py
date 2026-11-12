@@ -49,6 +49,17 @@ from .recruitment import (
     PositionPatch,
     PositionRead,
 )
+from .wecom import (
+    InboxRead,
+    MockMessage,
+    NotificationRead,
+    ReminderPolicyRead,
+    ReminderPolicyUpdate,
+    TaskRetry,
+    WecomBinding,
+    WecomStatus,
+    WecomUser,
+)
 from .workbench import (
     DashboardData,
     HistoryRead,
@@ -64,6 +75,8 @@ from .workbench import (
 )
 
 __all__ = [
+    "InboxRead", "MockMessage", "NotificationRead", "ReminderPolicyRead", "ReminderPolicyUpdate",
+    "TaskRetry", "WecomBinding", "WecomStatus", "WecomUser",
     "OfferCreate", "OfferPatch", "OfferRead", "RecruitmentOptions", "TaskRead", "TaskKind",
     "HistoryRead", "PolicyRead", "PositionProgress", "WeeklyCount",
     "ApplicationProjection",
