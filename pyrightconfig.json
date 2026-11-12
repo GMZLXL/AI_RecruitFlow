@@ -1,8 +1,8 @@
 {
-  "include": ["starter/backend/app", "starter/backend/tests", "starter/backend/scripts", "starter/backend/alembic"],
-  "venvPath": "starter/backend",
+  "include": ["backend/app", "backend/tests", "backend/scripts", "backend/alembic"],
+  "venvPath": "backend",
   "venv": ".venv",
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
-  "extraPaths": ["starter/backend"]
+  "extraPaths": ["backend"]
 }

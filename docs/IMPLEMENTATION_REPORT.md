@@ -7,7 +7,7 @@
 已完成：十二类领域模型+幂等记录表；UUID/UTC/SQLite外键；Alembic；业务CRUD/筛选/分页/软删除；开发RBAC；状态机与版本冲突；事务审计/outbox；基础前端身份及阶段操作。
 本阶段变更文件：见下方S1清单，契约和生成前端类型已同步。
 数据库迁移：0001_s1；空库upgrade/check/downgrade/再upgrade通过；旧S0库已复制为recruitflow_s1.db并保留原库和备份；PostgreSQL迁移DDL离线编译通过。
-运行的命令：npm run check；npm run db:check；npm run smoke:http；python -m compileall -q app alembic；scripts/upgrade_s0.py。
+运行的命令：npm run check；npm run db:check；npm run smoke:http；python -m compileall -q app alembic；-m scripts.migrations.upgrade_s0。
 测试结果：46通过、0失败、0跳过；Pyright/TypeScript、Ruff/ESLint、契约漂移检查、Vite build及真实本机HTTP冒烟通过。
 未完成/阻塞：无S1凭证阻塞；完整AI确认处理属S2；生产身份、真实PostgreSQL/外部系统尚未联调；成品界面与多尺寸验收属S4。
 重要风险：仅本机模拟用户，禁止生产使用；旧记录归属模拟管理员；保留1条Starlette测试客户端兼容弃用警告；前端主包约2.30MB待S4拆包。
@@ -28,7 +28,7 @@ Git：已初始化本地main分支，S0基线提交`b137928`；本轮完成S1后
 
 实际结果：`npm run check`退出0；pytest **46 passed, 1 warning in 7.53s**；Vite **built in 15.39s**；`npm run db:check`为**No new upgrade operations detected**；`npm run smoke:http`为**PASS: web 5173 + Vite proxy + API 8000 + create/update/dedupe/dashboard/mock sync**。生成路径19个；主JS2,298KB、gzip754KB。未执行真实PostgreSQL连接、Linux/macOS启动或任何真实第三方写入，不将DDL编译视为真实数据库联调。
 
-S1文件：`app/db.py`、`domain.py`、`schemas.py`、`security.py`、`errors.py`、`services.py`、`main.py`；`alembic.ini`及`alembic/`；`scripts/upgrade_s0.py`和HTTP冒烟；`tests/conftest.py`、保留的`test_smoke.py`、新增`test_s1.py`/`test_migrations.py`/`test_concurrency.py`；依赖源/哈希锁和.env示例；前端API/App/CSS/生成类型；根package/pyright配置；OpenAPI和README、docs/04/05/09/13、S1计划及状态报告。
+S1文件：`app/db.py`、`domain.py`、`schemas.py`、`security.py`、`errors.py`、`services.py`、`main.py`；`alembic.ini`及`alembic/`；`-m scripts.migrations.upgrade_s0`和HTTP冒烟；`tests/conftest.py`、保留的`test_smoke.py`、新增`test_s1.py`/`test_migrations.py`/`test_concurrency.py`；依赖源/哈希锁和.env示例；前端API/App/CSS/生成类型；根package/pyright配置；OpenAPI和README、docs/04/05/09/13、S1计划及状态报告。
 
 以下为S0及补验历史记录，当前状态以上述S1交付为准。
 
@@ -52,7 +52,7 @@ S1文件：`app/db.py`、`domain.py`、`schemas.py`、`security.py`、`errors.py
 
 ## 统一结构与字段扩展
 
-- 唯一契约源：`starter/backend/app/schemas.py`；通过FastAPI导出真实路由的OpenAPI，再生成TypeScript，前端不再手写一份Application/SyncJob类型。
+- 唯一契约源：`backend/app/schemas/`；通过FastAPI导出真实路由的OpenAPI，再生成TypeScript，前端不再手写一份Application/SyncJob类型。
 - 核心约定：snake_case、字符串API ID、独立申请编号、UTC输出、正整数version、统一分页/请求编号/安全错误响应、请求拒绝未知字段。
 - 新增字段流程：先确定实体归属，再修改schema与必要的数据库迁移，再生成类型；业务可检索字段保持列和强类型，自定义字段使用未来S1受控命名空间JSON方案。S0不接受任意扩展字典。
 - `docs/13-统一数据契约与扩展规范.md`先定义十二类领域实体的边界和S0验收计划，再实施代码。S0不提前生成未实现实体的假接口。
@@ -87,14 +87,14 @@ npm run smoke:http
 python -m compileall -q app
   exit 0
 
-uv pip install --offline --require-hashes -r starter/backend/requirements.lock ...
+uv pip install --offline --require-hashes -r backend/requirements.lock ...
   Checked 32 packages; exit 0
 
 npm install（锁文件更新后审计）
   found 0 vulnerabilities
 ```
 
-环境：Windows、Python3.12.16、Node24.14.0、npm11.9.0。系统原有Python3.10未修改；本轮在`.tools/`准备Python并创建`starter/backend/.venv`。Python锁文件由universal解析生成，具有平台标记与哈希，但Linux/macOS、Python3.11和PostgreSQL未做实机验证。
+环境：Windows、Python3.12.16、Node24.14.0、npm11.9.0。系统原有Python3.10未修改；本轮在`.tools/`准备Python并创建`backend/.venv`。Python锁文件由universal解析生成，具有平台标记与哈希，但Linux/macOS、Python3.11和PostgreSQL未做实机验证。
 
 沙箱曾阻断网络安装、临时目录SQLite、开发服务子进程与端口访问；依赖和最终全量检查通过授权常规进程执行。测试临时数据库改放工作区`.pytest_cache`，不会覆盖演示数据库。初始热重载进程在本运行环境退出，默认启动改为单进程后HTTP验证通过。
 
@@ -111,8 +111,8 @@ npm install（锁文件更新后审计）
 | 范围 | 文件 |
 |---|---|
 | 根工程 | `.gitignore`, `package.json`, `package-lock.json`, `pyrightconfig.json`, `scripts/python.mjs`, `scripts/check-contracts.mjs` |
-| 后端 | `starter/backend/app/db.py`, `app/main.py`, `app/schemas.py`, `scripts/export_contract.py`, `scripts/smoke_http.py`, `tests/conftest.py`, `tests/test_smoke.py`, `pyproject.toml`, `requirements.txt`, `requirements-dev.txt`, `requirements.lock`, `.env.example`, `README.md` |
-| 前端 | `starter/frontend/package.json`, `eslint.config.js`, `vite.config.ts`, `src/api.ts`, `src/App.tsx`, `src/types/api.generated.ts`, `README.md`, `DEPENDENCY_NOTE.md` |
+| 后端 | `backend/app/db.py`, `app/main.py`, `app/schemas/`, `-m scripts.contracts.export`, `scripts/smoke_http.py`, `tests/conftest.py`, `tests/test_smoke.py`, `pyproject.toml`, `requirements.txt`, `requirements-dev.txt`, `requirements.lock`, `.env.example`, `README.md` |
+| 前端 | `frontend/package.json`, `eslint.config.js`, `vite.config.ts`, `src/api.ts`, `src/App.tsx`, `src/types/api.generated.ts`, `README.md`, `DEPENDENCY_NOTE.md` |
 | 契约/文档 | `contracts/openapi.yaml`, 根`README.md`, `IMPLEMENTATION_STATUS.md`, `docs/04`, `docs/05`, `docs/09`, `docs/11`, `docs/13`, 本报告 |
 
 没有Git元数据，未创建commit。`.env`、数据库、日志、工具和虚拟环境均被忽略；不得提交真实个人资料。

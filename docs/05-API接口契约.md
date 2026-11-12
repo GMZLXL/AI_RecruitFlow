@@ -30,7 +30,7 @@ PATCH申请体为`stage?/source_channel?/custom_fields?/change_reason`，返回`
 
 ## S0 历史契约（已由S1更新）
 
-`app/schemas.py -> contracts/openapi.yaml -> src/types/api.generated.ts`，通过根目录 `npm run contracts:generate` 生成，`npm run contracts:check` 检测漂移。详见 [统一数据契约与扩展规范](13-统一数据契约与扩展规范.md)。OpenAPI 仅导出当前实际路由；下方完整 API 列表为 S1~S7 目标，不代表已实现。
+`app/schemas/ -> contracts/openapi.yaml -> src/types/api.generated.ts`，通过根目录 `npm run contracts:generate` 生成，`npm run contracts:check` 检测漂移。详见 [统一数据契约与扩展规范](13-统一数据契约与扩展规范.md)。OpenAPI 仅导出当前实际路由；下方完整 API 列表为 S1~S7 目标，不代表已实现。
 
 | 方法 | 已实现路径 | 结构/限制 |
 |---|---|---|

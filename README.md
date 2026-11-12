@@ -6,9 +6,9 @@
 
 ## 工作区
 
-- `starter/backend/app/schemas.py`：前后端统一契约源。
+- `backend/app/schemas/`：前后端统一契约源。
 - `contracts/openapi.yaml`：由实际 FastAPI 路由生成，只有已实现接口。
-- `starter/frontend/src/types/api.generated.ts`：由 OpenAPI 自动生成，禁止手改。
+- `frontend/src/types/api.generated.ts`：由 OpenAPI 自动生成，禁止手改。
 - `docs/01~12`：产品与目标设计；`docs/13-统一数据契约与扩展规范.md`：字段/版本/扩展规范。
 - `codex/PHASE_TASKS.md`：S0~S7 执行与验收顺序。
 - `docs/IMPLEMENTATION_REPORT.md`：逐阶段实际结果与限制。
@@ -20,9 +20,9 @@
 Windows PowerShell（已安装 Python 3.12 的新环境）：
 
 ```powershell
-py -3.12 -m venv starter/backend/.venv
-starter/backend/.venv/Scripts/python.exe -m pip install --require-hashes -r starter/backend/requirements.lock
-Copy-Item starter/backend/.env.example starter/backend/.env
+py -3.12 -m venv backend/.venv
+backend/.venv/Scripts/python.exe -m pip install --require-hashes -r backend/requirements.lock
+Copy-Item backend/.env.example backend/.env
 npm ci
 npm run db:upgrade
 ```
@@ -30,9 +30,9 @@ npm run db:upgrade
 Linux/macOS：
 
 ```bash
-python3 -m venv starter/backend/.venv
-starter/backend/.venv/bin/python -m pip install --require-hashes -r starter/backend/requirements.lock
-cp starter/backend/.env.example starter/backend/.env
+python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --require-hashes -r backend/requirements.lock
+cp backend/.env.example backend/.env
 npm ci
 npm run db:upgrade
 ```
@@ -50,7 +50,7 @@ npm run dev:api
 npm run dev:web
 ```
 
-打开 [Mock 页面](http://127.0.0.1:5173)、[后端文档](http://127.0.0.1:8000/docs)、[健康检查](http://127.0.0.1:8000/api/v1/health)。Vite 将 `/api` 转发给 8000。5173 被占用会明确失败，不自动换端口。数据库默认位于 `starter/backend/recruitflow.db`，不得提交。
+打开 [Mock 页面](http://127.0.0.1:5173)、[后端文档](http://127.0.0.1:8000/docs)、[健康检查](http://127.0.0.1:8000/api/v1/health)。Vite 将 `/api` 转发给 8000。5173 被占用会明确失败，不自动换端口。数据库默认位于 `backend/recruitflow.db`，不得提交。
 
 ## 演示与检查
 
@@ -69,7 +69,7 @@ npm run contracts:check
 npm run db:check           # 模型与迁移漂移检查
 ```
 
-后端单独检查：进入 `starter/backend`，激活 `.venv` 后运行 `python -m pytest -q`、`python -m compileall -q app`。前端可单独运行 `npm run typecheck --workspace starter/frontend` 和 `npm run build --workspace starter/frontend`。S4 再补组件测试，不以空脚本冒充测试通过。
+后端单独检查：进入 `backend`，激活 `.venv` 后运行 `python -m pytest -q`、`python -m compileall -q app`。前端可单独运行 `npm run typecheck --workspace frontend` 和 `npm run build --workspace frontend`。S4 再补组件测试，不以空脚本冒充测试通过。
 
 ## 字段扩展
 
@@ -78,8 +78,8 @@ npm run db:check           # 模型与迁移漂移检查
 启动前必须执行Alembic，服务不再使用create_all。空库运行`npm run db:upgrade`；旧S0库不能直接upgrade或stamp，使用以下离线复制升级（后端服务先停止）：
 
 ```powershell
-cd starter/backend
-.venv/Scripts/python.exe scripts/upgrade_s0.py --source recruitflow.db --destination recruitflow_s1.db
+cd backend
+.venv/Scripts/python.exe -m scripts.migrations.upgrade_s0 --source recruitflow.db --destination recruitflow_s1.db
 ```
 
 Unix改用`.venv/bin/python`。命令保留原库和备份，目标文件必须不存在；验证后在后端`.env`设置`DATABASE_URL=sqlite:///./recruitflow_s1.db`再启动。当前工作区已完成此升级并使用新库；原库仍在，未加入Git。旧记录统一归属模拟管理员，需在正式迁移前核对真实负责人；S1不接收真实个人资料。
