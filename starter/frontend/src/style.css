@@ -1,0 +1,12 @@
+:root { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft Yahei', sans-serif; color: #172334; background: #f6f8fb; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.app-shell { min-height: 100vh; }
+.brand { font-size: 18px; padding: 25px 20px; color: #1765c1; border-bottom: 1px solid #eef1f5; letter-spacing: .1px; }
+.brand small { display: block; margin-top: 4px; font-size: 11px; letter-spacing: .7px; color: #8c98a5; }
+.topbar { height: 65px; line-height: 65px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; border-bottom: 1px solid #edf0f3; }
+.app-content { padding: 24px; max-width: 1550px; width: 100%; }
+.page-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.section-card { margin-top: 20px; }
+.ant-table-wrapper { margin-top: 10px; }
+@media (max-width: 600px) { .app-content {padding: 14px;} .topbar {padding: 0 10px;} .brand {padding: 18px;} .ant-form-inline {gap:8px;} .ant-form-inline .ant-form-item {width:100%;} }

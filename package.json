@@ -1,0 +1,32 @@
+{
+  "name": "ai-recruitflow",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["starter/frontend"],
+  "engines": { "node": ">=22.12.0", "npm": ">=10" },
+  "scripts": {
+    "dev:api": "node scripts/python.mjs -m uvicorn app.main:app --host 127.0.0.1 --port 8000",
+    "dev:web": "npm run dev --workspace starter/frontend",
+    "contracts:export": "node scripts/python.mjs scripts/export_contract.py",
+    "contracts:generate": "npm run contracts:export && openapi-typescript contracts/openapi.yaml -o starter/frontend/src/types/api.generated.ts",
+    "contracts:check": "node scripts/check-contracts.mjs",
+    "typecheck": "pyright && npm run typecheck --workspace starter/frontend",
+    "lint": "node scripts/python.mjs -m ruff check app tests scripts && npm run lint --workspace starter/frontend",
+    "test": "node scripts/python.mjs -m pytest -q",
+    "smoke:http": "node scripts/python.mjs scripts/smoke_http.py",
+    "build": "npm run build --workspace starter/frontend",
+    "check": "npm run contracts:check && npm run lint && npm run typecheck && npm test && npm run build"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": { "minimatch": "^11.0.1" }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.5.0",
+    "openapi-typescript": "^7.10.1",
+    "pyright": "^1.1.407",
+    "typescript-eslint": "^8.46.0"
+  }
+}

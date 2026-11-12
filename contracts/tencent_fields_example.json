@@ -1,0 +1,15 @@
+{
+  "notice": "这是逻辑字段映射示例而非已验证的腾讯文档 MCP API 请求体；真实 field_id/type 必须经 tools/list/表结构接口查询后替换。",
+  "provider": "tencent_docs_smartsheet",
+  "mode": "mock",
+  "logical_fields": {
+    "application_code": {"display_name":"申请编号","remote_field_id":null},
+    "candidate_name": {"display_name":"候选人","remote_field_id":null},
+    "position": {"display_name":"应聘岗位","remote_field_id":null},
+    "stage": {"display_name":"当前阶段","remote_field_id":null},
+    "latest_interview_result": {"display_name":"最近面试结果","remote_field_id":null},
+    "next_interview_at": {"display_name":"下次面试时间","remote_field_id":null},
+    "updated_at": {"display_name":"最后更新时间","remote_field_id":null},
+    "sync_version": {"display_name":"同步版本","remote_field_id":null}
+  }
+}

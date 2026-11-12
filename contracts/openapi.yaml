@@ -1,0 +1,908 @@
+openapi: 3.1.0
+info:
+  title: AI RecruitFlow Mock API
+  description: S0 local Mock baseline. No real DeepSeek/Tencent Docs/WeCom connections.
+  version: 0.1.0
+paths:
+  /api/v1/health:
+    get:
+      summary: Health
+      operationId: health_api_v1_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_Health_'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/integrations/status:
+    get:
+      summary: Integration Status
+      operationId: integration_status_api_v1_integrations_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_IntegrationStatus_'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/applications:
+    get:
+      summary: Applications
+      operationId: applications_api_v1_applications_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_ApplicationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Create Application
+      operationId: create_application_api_v1_applications_post
+      parameters:
+      - name: idempotency-key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 120
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_ApplicationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/ingestions:
+    post:
+      summary: Ingestion
+      operationId: ingestion_api_v1_ingestions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_IngestionResult_'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/dashboard/overview:
+    get:
+      summary: Dashboard
+      operationId: dashboard_api_v1_dashboard_overview_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_DashboardData_'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/sync/jobs:
+    get:
+      summary: Sync Jobs
+      operationId: sync_jobs_api_v1_sync_jobs_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_SyncJob_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/sync/run:
+    post:
+      summary: Run Mock Sync
+      description: Only local simulation. No network calls or real credentials.
+      operationId: run_mock_sync_api_v1_sync_run_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_SyncRun_'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ApiError:
+      properties:
+        code:
+          type: string
+          title: Code
+        message:
+          type: string
+          title: Message
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+      additionalProperties: false
+      type: object
+      required:
+      - code
+      - message
+      title: ApiError
+    ApplicationCreate:
+      properties:
+        candidate_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Candidate Name
+        position_title:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Position Title
+        application_code:
+          anyOf:
+          - type: string
+            maxLength: 40
+            minLength: 1
+            pattern: ^[A-Z0-9_-]+$
+          - type: 'null'
+          title: Application Code
+      additionalProperties: false
+      type: object
+      required:
+      - candidate_name
+      - position_title
+      title: ApplicationCreate
+    ApplicationRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        application_code:
+          type: string
+          title: Application Code
+        candidate_id:
+          type: string
+          title: Candidate Id
+        candidate_name:
+          type: string
+          title: Candidate Name
+        position_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Position Id
+        position_title:
+          type: string
+          title: Position Title
+        stage:
+          $ref: '#/components/schemas/Stage'
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          title: Created At
+        updated_at:
+          type: string
+          title: Updated At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - application_code
+      - candidate_id
+      - candidate_name
+      - position_title
+      - stage
+      - version
+      - created_at
+      - updated_at
+      title: ApplicationRead
+    DashboardData:
+      properties:
+        new_applications:
+          type: integer
+          minimum: 0.0
+          title: New Applications
+          description: S0 为申请总数，未实施日期筛选
+        by_stage:
+          additionalProperties:
+            type: integer
+          propertyNames:
+            $ref: '#/components/schemas/Stage'
+          type: object
+          title: By Stage
+        pending_sync:
+          type: integer
+          minimum: 0.0
+          title: Pending Sync
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+      additionalProperties: false
+      type: object
+      required:
+      - new_applications
+      - by_stage
+      - pending_sync
+      title: DashboardData
+    ErrorResponse:
+      properties:
+        error:
+          $ref: '#/components/schemas/ApiError'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - error
+      - request_id
+      title: ErrorResponse
+    Health:
+      properties:
+        status:
+          type: string
+          const: ok
+          title: Status
+          default: ok
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+        note:
+          type: string
+          title: Note
+          default: No external API used
+      additionalProperties: false
+      type: object
+      title: Health
+    IngestionRequest:
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Text
+        external_event_id:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+          - type: 'null'
+          title: External Event Id
+        source:
+          type: string
+          enum:
+          - manual
+          - wecom_mock
+          title: Source
+          default: manual
+      additionalProperties: false
+      type: object
+      required:
+      - text
+      title: IngestionRequest
+    IngestionResult:
+      properties:
+        status:
+          type: string
+          enum:
+          - applied
+          - needs_confirmation
+          - duplicate
+          title: Status
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        intent:
+          anyOf:
+          - type: string
+            enum:
+            - create_application
+            - update_stage
+          - type: 'null'
+          title: Intent
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Id
+        application:
+          anyOf:
+          - $ref: '#/components/schemas/ApplicationRead'
+          - type: 'null'
+        sync_state:
+          anyOf:
+          - type: string
+            const: pending
+          - type: 'null'
+          title: Sync State
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+      additionalProperties: false
+      type: object
+      required:
+      - status
+      title: IngestionResult
+    IntegrationStatus:
+      properties:
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+        deepseek:
+          type: string
+          const: not_connected
+          title: Deepseek
+          default: not_connected
+        tencent_docs:
+          type: string
+          const: mock_only
+          title: Tencent Docs
+          default: mock_only
+        wecom:
+          type: string
+          const: not_connected
+          title: Wecom
+          default: not_connected
+      additionalProperties: false
+      type: object
+      title: IntegrationStatus
+    ListResponse_ApplicationRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/ApplicationRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[ApplicationRead]
+    ListResponse_SyncJob_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/SyncJob'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[SyncJob]
+    Pagination:
+      properties:
+        page:
+          type: integer
+          minimum: 1.0
+          title: Page
+        page_size:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: Page Size
+        total:
+          type: integer
+          minimum: 0.0
+          title: Total
+      additionalProperties: false
+      type: object
+      required:
+      - page
+      - page_size
+      - total
+      title: Pagination
+    Response_ApplicationRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/ApplicationRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[ApplicationRead]
+    Response_DashboardData_:
+      properties:
+        data:
+          $ref: '#/components/schemas/DashboardData'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[DashboardData]
+    Response_Health_:
+      properties:
+        data:
+          $ref: '#/components/schemas/Health'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[Health]
+    Response_IngestionResult_:
+      properties:
+        data:
+          $ref: '#/components/schemas/IngestionResult'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[IngestionResult]
+    Response_IntegrationStatus_:
+      properties:
+        data:
+          $ref: '#/components/schemas/IntegrationStatus'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[IntegrationStatus]
+    Response_SyncRun_:
+      properties:
+        data:
+          $ref: '#/components/schemas/SyncRun'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[SyncRun]
+    Stage:
+      type: string
+      enum:
+      - applied
+      - screening
+      - interview_1
+      - interview_2
+      - offer
+      - hired
+      - rejected
+      - withdrawn
+      title: Stage
+    SyncJob:
+      properties:
+        id:
+          type: string
+          title: Id
+        application_id:
+          type: string
+          title: Application Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        status:
+          $ref: '#/components/schemas/SyncState'
+        remote_record_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Remote Record Id
+        attempts:
+          type: integer
+          minimum: 0.0
+          title: Attempts
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - application_id
+      - version
+      - status
+      - remote_record_id
+      - attempts
+      title: SyncJob
+    SyncRun:
+      properties:
+        processed:
+          type: integer
+          minimum: 0.0
+          title: Processed
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+        warning:
+          type: string
+          title: Warning
+          default: 仅模拟，不代表写入腾讯文档
+      additionalProperties: false
+      type: object
+      required:
+      - processed
+      title: SyncRun
+    SyncState:
+      type: string
+      enum:
+      - pending
+      - mock_synced
+      title: SyncState
