@@ -14,10 +14,11 @@ from app.db import (
     init_db,
 )
 
-if os.getenv("APP_ENV", "development") != "development" or os.getenv("APP_MODE", "mock") != "mock":
-    raise RuntimeError(
-        "S1 only supports APP_ENV=development and APP_MODE=mock; production identity is not implemented"
-    )
+if os.getenv("APP_ENV", "development") != "development" or os.getenv("APP_MODE", "mock") not in {
+    "mock",
+    "hybrid",
+}:
+    raise RuntimeError("S2 only supports development mock/hybrid; production identity is not implemented")
 
 
 @asynccontextmanager
@@ -29,9 +30,9 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="AI RecruitFlow Mock API",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
-    description="S1 domain, migration and development RBAC. No real external connections.",
+    description="S2 typed parsing and confirmation pipeline; external business projections remain mock.",
     responses={code: {"model": s.ErrorResponse} for code in (400, 401, 403, 404, 409, 422, 500)},
 )
 app.add_middleware(

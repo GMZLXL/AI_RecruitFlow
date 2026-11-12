@@ -1,5 +1,41 @@
 # AI RecruitFlow 实施报告
 
+## 工程化与 S2 实际交付（2026-11-12）
+
+```text
+阶段：S2
+已完成：前后端与脚本目录工程化；Parser协议/Mock/DeepSeek适配器；强类型提取；匹配与确认/修正/驳回；事件幂等/租约恢复；Web审核与结果联动；事务审计/outbox。
+本阶段变更文件：backend/app的api/core/db/schemas/services/integrations分层；frontend/src的app/pages/components/features/services/styles/types分层；脚本分类目录、测试分层、契约及文档。
+数据库迁移：0002_s2；新增接入租约字段，允许无原计划的面试结果记录；实际S1库升级成功，Alembic check无漂移，空库/旧库/回滚与离线PostgreSQL DDL回归通过。
+运行的命令：npm run check；npm run typecheck；python -m pytest -q；npm run contracts:check；npm run db:upgrade/db:check；npm run smoke:http；compileall；哈希锁离线安装核查。
+测试结果：最终pytest96通过、0失败、0跳过；Python/TS类型、Ruff/ESLint、契约和构建通过；HTTP及浏览器Mock审核验证通过。
+未完成/阻塞：真实DeepSeek为blocked_by_credentials，未使用真实Key联调；完整多尺寸产品验收在S4；腾讯文档/企微仍Mock，不属于本阶段真实接入。
+重要风险：仍为本机开发身份，不可生产使用；复杂日期与未知语义需人工确认；存在无计划结果记录时迁移降级会拒绝；保留1条上游测试客户端弃用警告与前端包体积警告。
+下一阶段：S3（异步外部同步与腾讯文档MCP）。本轮未进入S3。
+```
+
+目录整理先独立回归并保存`7f9e2cd`提交：46项S1测试、类型、lint、契约和构建全部通过。原starter前后端提升至根backend/frontend，.env/数据库/.venv随目录保留；npm workspace与锁文件、运行脚本、导入路径、Alembic、文档同步。根目录命令保持npm run dev:api/dev:web/check等，不需记内部脚本路径。工程规则见docs/14。
+
+后端main只装配应用，路由按资源、服务按事务/招聘/面试/接入/确认/提议应用拆分；schemas按领域组织并统一导出。前端App只组织应用壳与路由，页面、共享组件、审核功能、Axios客户端分别独立。Python操作脚本按contracts/migrations/smoke归类，根JS脚本按workspace/contracts归类；测试helpers不再从测试模块互相导入。
+
+S2解析：Mock/DeepSeek实现同一异步Parser协议。DeepSeek请求JSON Output、JSON Schema和示例，模型从环境读取，超时/空白/截断/非法字段最多重试一次；缺凭证、上游失败、引用不存在的标识/时点转审核。仅允许显式hybrid+deepseek使用官方HTTPS地址。输入脱敏，保存哈希与不超过300字的脱敏摘要，不保存独立原文或模型原始响应；用量缺失记unknown。官方依据见docs/07，未运行真实DeepSeek或声称95%字段准确率。
+
+接入先持久化认领并提交，Parser阶段不持有DB事务，之后新事务重新核验用户/匹配/状态/版本。并发同事件不重复创建，处理中返回parsing，120秒租约可通过重放原消息恢复。多动作任意一步无法执行时整段业务回滚，单独生成待确认。姓名即使唯一也不能自动更新，同名/多岗必须显式选择；模糊日期/钟点、冲突结果和未知意图转人工。失败面试只记录结果，不自动淘汰候选人。
+
+确认使用If-Match+Idempotency-Key，记录审核人、时间、理由、选中申请与修正提取内容；重复同请求复用结果，不同键处理已完成任务409；申请版本过期409并保留pending。审核业务、确认状态、接入结果、审计/outbox同事务。S1已有的人工终态逆转任务可继续确认；AI提议的录用/淘汰不能通过自动执行或AI审核捷径写入。
+
+96项测试覆盖原46项意图，并增加固定Mock样本、明确/模糊时间及秒/时区、DeepSeek JSON/枚举/额外字段/空白/截断/超时/401/503、脱敏/注入、缺凭证、实际数据库连接释放断言、三条Mock业务、同名/唯一姓名确认、修正/驳回、过期版本/越权/一次执行、事件并发、租约恢复、复合操作回滚及面试结果独立。审核修正内容的持久化也已回归验证。多个申请编号/多个轮次冲突先经过确定性拦截，即使自定义Parser想给出可执行提议也不会调用或写业务。
+
+实际最终后端结果为**96 passed, 1 warning in 12.33s**；此前聚合npm run check也已通过94项及前后端检查，增加两项确定性冲突回归后再次通过完整后端与类型/lint检查。前端最后构建**built in 13.01s**（主JS2,342.86KB、gzip767.76KB）。最终复核compileall、OpenAPI/TS漂移检查及Alembic check均通过；哈希锁离线检查38个包。未关闭警告或删除失败用例。
+
+HTTP实际结果：**PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/mock sync**，包括一面结果、二面安排、审核驳回及重复审核请求复用。运行会留下明确命名的虚构样本，所有同步均为MOCK。
+
+浏览器实际打开AI录入页，创建`AA04DED41A1E3`（虚构UI审核甲），姓名消息进入审核，人工选择/核对并确认推进筛选、再推进一面；待确认列表清空，结果面板显示“人工审核已确认执行”和实际申请阶段。发现原结果面板未联动时已修复并复验。没有把浏览器操作等同于完整1440/1024/390多尺寸验收。
+
+实际S1库已运行0002_s2升级；启动按Alembic head校验，无须新增迁移时手改版本常量。原S0库及先前备份保留，数据与.env均不提交。Linux/macOS启动、真实PostgreSQL连接和所有真实外部写入仍未执行；PostgreSQL仅离线DDL编译验证。
+
+以下为S1/S0历史记录，当前状态以上述S2为准。
+
 ## S1 实际交付（2026-11-12）
 
 ```text

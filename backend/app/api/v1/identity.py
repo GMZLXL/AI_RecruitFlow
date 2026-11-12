@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import APIRouter, Request
 from sqlalchemy import select
 
@@ -16,7 +18,7 @@ router = APIRouter()
 
 @router.get("/health", response_model=s.Response[s.Health])
 def health(request: Request):
-    return envelope(request, s.Health())
+    return envelope(request, s.Health(mode="hybrid" if os.getenv("APP_MODE") == "hybrid" else "mock"))
 
 
 @router.get("/ready", response_model=s.Response[s.Health])
@@ -39,4 +41,15 @@ def development_users(request: Request, db: DB, actor: Actor):
 @router.get("/integrations/status", response_model=s.Response[s.IntegrationStatus])
 def integration_status(request: Request, actor: Actor):
     require_admin(actor)
-    return envelope(request, s.IntegrationStatus())
+    data = s.IntegrationStatus(mode="hybrid" if os.getenv("APP_MODE") == "hybrid" else "mock")
+    if os.getenv("AI_PROVIDER", "mock") == "deepseek":
+        data.parser_provider = "deepseek"
+        data.model = os.getenv("DEEPSEEK_MODEL") or None
+        data.deepseek = (
+            "mode_mismatch"
+            if data.mode == "mock"
+            else "configured_not_verified"
+            if os.getenv("DEEPSEEK_API_KEY")
+            else "blocked_by_credentials"
+        )
+    return envelope(request, data)

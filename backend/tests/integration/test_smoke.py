@@ -28,15 +28,15 @@ def test_full_mock_flow(client):
     assert response["application"]["stage"] == "interview_2"
     assert response["application"]["version"] == 4
     assert client.post("/api/v1/ingestions", json=message).json()["data"]["status"] == "duplicate"
-    assert counts() == (1, 1, 4, 7, 7)
+    assert counts() == (1, 1, 4, 9, 9)
     assert client.get("/api/v1/dashboard/overview").json()["data"] == {
         "new_applications": 1,
         "by_stage": {"interview_2": 1},
-        "pending_sync": 7,
+        "pending_sync": 9,
         "mode": "mock",
     }
     sync = client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"]
-    assert sync["processed"] == 7 and sync["mode"] == "mock"
+    assert sync["processed"] == 9 and sync["mode"] == "mock"
     jobs = client.get("/api/v1/sync/jobs").json()["data"]
     assert all(j["status"] == "mock_synced" for j in jobs)
     assert len({j["remote_record_id"] for j in jobs if j["entity_type"] == "applications"}) == 1
@@ -59,7 +59,7 @@ def test_ambiguous_never_autowrites(client, text):
     assert response["data"]["status"] == "needs_confirmation"
     assert counts()[:3] == before[:3]
     assert counts()[3:] == tuple(
-        value + 1 for value in before[3:]
+        value + 3 for value in before[3:]
     )  # received job is audited, application is untouched
 
 
@@ -198,13 +198,17 @@ def test_unexpected_failure_returns_safe_error_envelope(client):
 @pytest.mark.parametrize("env", [{"APP_ENV": "production"}, {"APP_MODE": "live"}])
 def test_unsafe_modes_refuse_startup(env):
     result = subprocess.run(
-        [sys.executable, "-c", "import app.main"], capture_output=True, text=True, env={**os.environ, **env}
+        [sys.executable, "-c", "import app.main"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, **env},
+        cwd=Path(__file__).resolve().parents[2],
     )
     assert result.returncode != 0
-    assert "S1 only supports" in result.stderr
+    assert "only supports" in result.stderr
 
 
 def test_openapi_is_the_implemented_contract(client):
     path = Path(__file__).resolve().parents[3] / "contracts" / "openapi.yaml"
     assert yaml.safe_load(path.read_text(encoding="utf-8")) == client.get("/openapi.json").json()
-    assert "/api/v1/confirmations/{confirmation_id}/resolve" not in app.openapi()["paths"]
+    assert "/api/v1/confirmations/{confirmation_id}/resolve" in app.openapi()["paths"]

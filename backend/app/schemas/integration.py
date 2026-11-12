@@ -38,12 +38,16 @@ class DashboardData(Schema):
 
 class Health(Schema):
     status: Literal["ok"] = "ok"
-    mode: Literal["mock"] = "mock"
-    note: str = "No external API used"
+    mode: Literal["mock", "hybrid"] = "mock"
+    note: str = "Business connectors are mock; parser provider is separately configured"
 
 
 class IntegrationStatus(Schema):
-    mode: Literal["mock"] = "mock"
-    deepseek: Literal["not_connected"] = "not_connected"
+    mode: Literal["mock", "hybrid"] = "mock"
+    deepseek: Literal[
+        "not_connected", "blocked_by_credentials", "configured_not_verified", "mode_mismatch"
+    ] = "not_connected"
+    parser_provider: Literal["mock", "deepseek"] = "mock"
+    model: str | None = None
     tencent_docs: Literal["mock_only"] = "mock_only"
     wecom: Literal["not_connected"] = "not_connected"

@@ -1,6 +1,32 @@
 # 05｜REST API 接口契约（v1）
 
-## S1 当前已实现契约
+## S2 当前已实现契约
+
+目录已工程化，统一契约源为backend/app/schemas/，路由在backend/app/api/v1/。运行OpenAPI为0.3.0、20个实际路径；以下S2内容优先于历史说明。
+
+`POST /api/v1/ingestions`：text（1~2000，去除首尾空白）、source(manual/wecom_mock)、external_event_id?、execute_if_unambiguous（默认true）。同source+事件ID唯一，同ID不同文本或执行选项409；不提供ID表示新的事件。响应统一data/request_id，data包含ingestion_id、status(applied/needs_confirmation/duplicate/parsing/failed)、intent、application?/application_id?、confirmation_id?、reason/reason_code、sync_state、mode(mock/hybrid)、parser_provider(mock/deepseek)。缺凭证不是成功或Mock假响应，返回需确认并带BLOCKED_BY_CREDENTIALS。
+
+处理分三段：持久化认领→无数据库事务的Parser调用→新事务复核后应用/生成确认。处理中重复消息返回parsing；120秒租约过期可携原始同消息重放恢复，处理token/版本阻断旧处理者提交。已应用事件重放duplicate，已驳回事件保持failed。S1未生成审核任务的历史needs_confirmation记录，可重放原消息升级到新审核流程，不猜测已丢弃的原文。
+
+`GET /api/v1/ingestions?page=1&page_size=20`：按权限列出接入状态、错误码、时间、脱敏摘要、结构化extraction和result，不返回原文或模型原始响应。
+
+`GET /api/v1/confirmations?status=pending&page=1&page_size=20`：返回id/version、application_id、reason/status、强类型proposal、可见申请候选列表、message_excerpt，以及S1终态任务的target_stage/expected_application_version。
+
+`POST /api/v1/confirmations/{id}/resolve`：必须If-Match审核版本和Idempotency-Key。body为decision(confirm/modify/reject)、change_reason（必填），可选application_id、expected_application_version、candidate_id、position_id、interview_id、create_new_candidate（默认false）、correction（仅modify，且必填）。correction为完整强类型Extraction，拒绝未知字段/任意工具JSON。
+
+```json
+{"decision":"confirm","change_reason":"人工核对申请编号后确认","application_id":"目标UUID","expected_application_version":3}
+```
+
+确认重新检查权限、审核pending状态和目标版本；变更后409仍保留pending。同一幂等请求复用原响应；不同键重复处理已完成任务409。响应为data:{confirmation_id,status(confirmed/rejected),version,application?}。驳回不改变申请；修改内容、审核人/时间、理由及业务变更同事务审计/outbox。创建新同名候选人需显式create_new_candidate=true，或选择已有candidate_id，不能自动合并。
+
+Extraction包括intent(create_application/update_stage/record_result/schedule_interview/query/unknown)、申请编号/姓名/岗位、stage、interview_round/result、scheduled_at、interviewer、next_interview、missing_fields/ambiguities/source_spans/should_confirm。时间带时区，缺具体时点不能猜测。来源片段及原因列表有条数/长度限制。姓名即使唯一也需人工选择申请；多个编号/多个轮次冲突不自动执行。AI提议的hired/rejected不会自动执行或通过AI审核捷径执行，应走人工申请管理。
+
+“一面通过”记录第一轮passed并进入下一阶段；“安排二面”创建独立的第二轮scheduled/pending。结果-only记录可缺scheduled_at/interviewer（返回null），不编造历史计划；安排接口仍要求时间和面试官。多个动作必须全部校验成功，任何一步需确认都回滚本次业务修改。
+
+`GET /integrations/status`（管理员）：增加parser_provider/model，deepseek为not_connected/blocked_by_credentials/configured_not_verified/mode_mismatch。configured_not_verified只代表存在配置，不代表真实联调成功。腾讯文档仍mock_only、企微仍not_connected。
+
+## S1 历史契约（由S2增补/更新）
 
 运行契约由Pydantic生成，共19个实际路径。以下内容优先于S0历史说明和后续目标示例。
 

@@ -1,4 +1,13 @@
-from .ai import ConfirmationRead, IngestionRequest, IngestionResult
+from .ai import (
+    ConfirmationRead,
+    Extraction,
+    IngestionRead,
+    IngestionRequest,
+    IngestionResult,
+    ResolutionResult,
+    ResolveRequest,
+    ScheduleProposal,
+)
 from .common import (
     ApiError,
     CustomFields,
@@ -34,6 +43,11 @@ from .recruitment import (
 )
 
 __all__ = [
+    "Extraction",
+    "IngestionRead",
+    "ResolutionResult",
+    "ResolveRequest",
+    "ScheduleProposal",
     "Schema",
     "Response",
     "Pagination",

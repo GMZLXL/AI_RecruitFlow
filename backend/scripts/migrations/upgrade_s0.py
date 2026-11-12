@@ -18,6 +18,7 @@ from sqlalchemy import create_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 
 from alembic import command  # noqa: E402
+from app.core.config import BACKEND_ROOT  # noqa: E402
 from app.core.security import DEV_IDS, seed_dev_users  # noqa: E402
 from app.db import Application, AuditLog, Candidate, Event, Outbox, Position, RemoteLink, utcnow  # noqa: E402
 from app.services import snapshot  # noqa: E402
@@ -55,7 +56,7 @@ def upgrade_s0(source: Path, destination: Path) -> Path:
             old.backup(copy)
     destination.parent.mkdir(parents=True, exist_ok=True)
     engine = create_engine("sqlite:///" + destination.as_posix())
-    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    config = Config(str(BACKEND_ROOT / "alembic.ini"))
     with engine.begin() as connection:
         config.attributes["connection"] = connection
         command.upgrade(config, "head")

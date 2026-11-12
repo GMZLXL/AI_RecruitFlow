@@ -1,8 +1,9 @@
 openapi: 3.1.0
 info:
   title: AI RecruitFlow Mock API
-  description: S1 domain, migration and development RBAC. No real external connections.
-  version: 0.2.0
+  description: S2 typed parsing and confirmation pipeline; external business projections
+    remain mock.
+  version: 0.3.0
 paths:
   /api/v1/health:
     get:
@@ -2152,6 +2153,152 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Internal Server Error
+  /api/v1/ingestions:
+    post:
+      summary: Ingestion
+      operationId: ingestion_api_v1_ingestions_post
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_IngestionResult_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    get:
+      summary: Ingestions
+      operationId: ingestions_api_v1_ingestions_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_IngestionRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/confirmations:
     get:
       summary: Confirmations
@@ -2174,6 +2321,13 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: pending
+          title: Status
       - name: x-dev-user
         in: header
         required: false
@@ -2231,11 +2385,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Internal Server Error
-  /api/v1/ingestions:
+  /api/v1/confirmations/{confirmation_id}/resolve:
     post:
-      summary: Ingestion
-      operationId: ingestion_api_v1_ingestions_post
+      summary: Confirmation Resolve
+      operationId: confirmation_resolve_api_v1_confirmations__confirmation_id__resolve_post
       parameters:
+      - name: confirmation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Confirmation Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
       - name: x-dev-user
         in: header
         required: false
@@ -2249,14 +2427,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/IngestionRequest'
+              $ref: '#/components/schemas/ResolveRequest'
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Response_IngestionResult_'
+                $ref: '#/components/schemas/Response_ResolutionResult_'
         '400':
           content:
             application/json:
@@ -2843,13 +3021,30 @@ components:
         reason:
           type: string
           title: Reason
-        proposed_json:
-          additionalProperties: true
-          type: object
-          title: Proposed Json
         status:
+          $ref: '#/components/schemas/ConfirmationState'
+        proposal:
+          anyOf:
+          - $ref: '#/components/schemas/Extraction'
+          - type: 'null'
+        candidates:
+          items:
+            $ref: '#/components/schemas/ApplicationRead'
+          type: array
+          title: Candidates
+        message_excerpt:
           type: string
-          title: Status
+          title: Message Excerpt
+          default: ''
+        target_stage:
+          anyOf:
+          - $ref: '#/components/schemas/Stage'
+          - type: 'null'
+        expected_application_version:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Expected Application Version
       additionalProperties: false
       type: object
       required:
@@ -2859,9 +3054,15 @@ components:
       - updated_at
       - application_id
       - reason
-      - proposed_json
       - status
       title: ConfirmationRead
+    ConfirmationState:
+      type: string
+      enum:
+      - pending
+      - confirmed
+      - rejected
+      title: ConfirmationState
     DashboardData:
       properties:
         new_applications:
@@ -2978,6 +3179,114 @@ components:
       - after_json
       - created_at
       title: EventRead
+    Extraction:
+      properties:
+        intent:
+          type: string
+          enum:
+          - create_application
+          - update_stage
+          - record_result
+          - schedule_interview
+          - query
+          - unknown
+          title: Intent
+        application_code:
+          anyOf:
+          - type: string
+            maxLength: 40
+            minLength: 1
+            pattern: ^[A-Z0-9_-]+$
+          - type: 'null'
+          title: Application Code
+        candidate_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Candidate Name
+        position_name:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Position Name
+        stage:
+          anyOf:
+          - $ref: '#/components/schemas/Stage'
+          - type: 'null'
+        interview_round:
+          anyOf:
+          - type: integer
+            maximum: 30.0
+            minimum: 1.0
+          - type: 'null'
+          title: Interview Round
+        interview_result:
+          anyOf:
+          - type: string
+            enum:
+            - pending
+            - passed
+            - failed
+            - cancelled
+          - type: 'null'
+          title: Interview Result
+        scheduled_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Scheduled At
+        interviewer:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Interviewer
+        next_interview:
+          anyOf:
+          - $ref: '#/components/schemas/ScheduleProposal'
+          - type: 'null'
+        missing_fields:
+          items:
+            type: string
+            maxLength: 120
+            minLength: 1
+          type: array
+          maxItems: 20
+          title: Missing Fields
+        ambiguities:
+          items:
+            type: string
+            maxLength: 120
+            minLength: 1
+          type: array
+          maxItems: 20
+          title: Ambiguities
+        source_spans:
+          additionalProperties:
+            type: string
+            maxLength: 200
+            minLength: 1
+          propertyNames:
+            maxLength: 80
+            minLength: 1
+          type: object
+          maxProperties: 20
+          title: Source Spans
+        should_confirm:
+          type: boolean
+          title: Should Confirm
+          default: false
+      additionalProperties: false
+      type: object
+      required:
+      - intent
+      title: Extraction
     Health:
       properties:
         status:
@@ -2987,13 +3296,15 @@ components:
           default: ok
         mode:
           type: string
-          const: mock
+          enum:
+          - mock
+          - hybrid
           title: Mode
           default: mock
         note:
           type: string
           title: Note
-          default: No external API used
+          default: Business connectors are mock; parser provider is separately configured
       additionalProperties: false
       type: object
       title: Health
@@ -3016,6 +3327,68 @@ components:
       required:
       - user
       title: Identity
+    IngestionRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        source:
+          type: string
+          title: Source
+        external_event_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Event Id
+        state:
+          type: string
+          title: State
+        error_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error Code
+        received_at:
+          type: string
+          format: date-time
+          title: Received At
+        message_excerpt:
+          type: string
+          title: Message Excerpt
+        extraction:
+          anyOf:
+          - $ref: '#/components/schemas/Extraction'
+          - type: 'null'
+        result:
+          anyOf:
+          - $ref: '#/components/schemas/IngestionResult'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - source
+      - external_event_id
+      - state
+      - error_code
+      - received_at
+      - message_excerpt
+      title: IngestionRead
     IngestionRequest:
       properties:
         text:
@@ -3037,6 +3410,10 @@ components:
           - wecom_mock
           title: Source
           default: manual
+        execute_if_unambiguous:
+          type: boolean
+          title: Execute If Unambiguous
+          default: true
       additionalProperties: false
       type: object
       required:
@@ -3044,24 +3421,40 @@ components:
       title: IngestionRequest
     IngestionResult:
       properties:
+        ingestion_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ingestion Id
         status:
           type: string
           enum:
           - applied
           - needs_confirmation
           - duplicate
+          - parsing
+          - failed
           title: Status
         reason:
           anyOf:
           - type: string
           - type: 'null'
           title: Reason
+        reason_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason Code
         intent:
           anyOf:
           - type: string
             enum:
             - create_application
             - update_stage
+            - record_result
+            - schedule_interview
+            - query
+            - unknown
           - type: 'null'
           title: Intent
         application_id:
@@ -3086,8 +3479,17 @@ components:
           title: Sync State
         mode:
           type: string
-          const: mock
+          enum:
+          - mock
+          - hybrid
           title: Mode
+          default: mock
+        parser_provider:
+          type: string
+          enum:
+          - mock
+          - deepseek
+          title: Parser Provider
           default: mock
       additionalProperties: false
       type: object
@@ -3098,14 +3500,32 @@ components:
       properties:
         mode:
           type: string
-          const: mock
+          enum:
+          - mock
+          - hybrid
           title: Mode
           default: mock
         deepseek:
           type: string
-          const: not_connected
+          enum:
+          - not_connected
+          - blocked_by_credentials
+          - configured_not_verified
+          - mode_mismatch
           title: Deepseek
           default: not_connected
+        parser_provider:
+          type: string
+          enum:
+          - mock
+          - deepseek
+          title: Parser Provider
+          default: mock
+        model:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Model
         tencent_docs:
           type: string
           const: mock_only
@@ -3210,11 +3630,15 @@ components:
           type: integer
           title: Round
         scheduled_at:
-          type: string
-          format: date-time
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
           title: Scheduled At
         interviewer:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Interviewer
         status:
           type: string
@@ -3328,6 +3752,25 @@ components:
       - request_id
       - pagination
       title: ListResponse[EventRead]
+    ListResponse_IngestionRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/IngestionRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[IngestionRead]
     ListResponse_InterviewRead_:
       properties:
         data:
@@ -3519,6 +3962,89 @@ components:
       - owner_user_id
       - active
       title: PositionRead
+    ResolutionResult:
+      properties:
+        confirmation_id:
+          type: string
+          title: Confirmation Id
+        status:
+          type: string
+          enum:
+          - confirmed
+          - rejected
+          title: Status
+        version:
+          type: integer
+          title: Version
+        application:
+          anyOf:
+          - $ref: '#/components/schemas/ApplicationRead'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - confirmation_id
+      - status
+      - version
+      title: ResolutionResult
+    ResolveRequest:
+      properties:
+        decision:
+          type: string
+          enum:
+          - confirm
+          - modify
+          - reject
+          title: Decision
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+        application_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Application Id
+        expected_application_version:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Expected Application Version
+        candidate_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Candidate Id
+        position_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Position Id
+        interview_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Interview Id
+        create_new_candidate:
+          type: boolean
+          title: Create New Candidate
+          default: false
+        correction:
+          anyOf:
+          - $ref: '#/components/schemas/Extraction'
+          - type: 'null'
+      additionalProperties: false
+      type: object
+      required:
+      - decision
+      - change_reason
+      title: ResolveRequest
     Response_ApplicationMutation_:
       properties:
         data:
@@ -3662,6 +4188,19 @@ components:
       - data
       - request_id
       title: Response[PositionRead]
+    Response_ResolutionResult_:
+      properties:
+        data:
+          $ref: '#/components/schemas/ResolutionResult'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[ResolutionResult]
     Response_SyncRun_:
       properties:
         data:
@@ -3698,6 +4237,31 @@ components:
       - MANAGER
       - ADMIN
       title: Role
+    ScheduleProposal:
+      properties:
+        round:
+          type: integer
+          maximum: 30.0
+          minimum: 1.0
+          title: Round
+        scheduled_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Scheduled At
+        interviewer:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Interviewer
+      additionalProperties: false
+      type: object
+      required:
+      - round
+      title: ScheduleProposal
     Stage:
       type: string
       enum:

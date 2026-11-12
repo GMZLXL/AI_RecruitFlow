@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from alembic.config import Config
 from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import (
     create_engine,
     event,
@@ -8,9 +10,9 @@ from sqlalchemy import (
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from app.core.config import DATABASE_URL
+from app.core.config import BACKEND_ROOT, DATABASE_URL
 
-SCHEMA_REVISION = "0001_s1"
+SCHEMA_REVISION = ScriptDirectory.from_config(Config(str(BACKEND_ROOT / "alembic.ini"))).get_current_head()
 
 
 @event.listens_for(Engine, "connect")

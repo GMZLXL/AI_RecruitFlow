@@ -35,6 +35,12 @@ class Outcome(StrEnum):
     WITHDRAWN = "withdrawn"
 
 
+class ConfirmationState(StrEnum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+
+
 TERMINAL_STAGES = {Stage.HIRED, Stage.REJECTED, Stage.WITHDRAWN}
 FORWARD_STAGES = {
     Stage.APPLIED: {Stage.SCREENING},

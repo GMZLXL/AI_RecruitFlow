@@ -117,8 +117,8 @@ class InterviewPatch(Schema):
 class InterviewRead(EntityRead):
     application_id: str
     round: int
-    scheduled_at: AwareDatetime
-    interviewer: str
+    scheduled_at: AwareDatetime | None
+    interviewer: str | None
     status: Literal["scheduled", "completed", "cancelled"]
     result: Literal["pending", "passed", "failed", "cancelled"]
     feedback_at: AwareDatetime | None

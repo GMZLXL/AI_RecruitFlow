@@ -254,6 +254,24 @@ export interface paths {
         patch: operations["interview_patch_api_v1_interviews__interview_id__patch"];
         trace?: never;
     };
+    "/api/v1/ingestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ingestions */
+        get: operations["ingestions_api_v1_ingestions_get"];
+        put?: never;
+        /** Ingestion */
+        post: operations["ingestion_api_v1_ingestions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/confirmations": {
         parameters: {
             query?: never;
@@ -271,7 +289,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ingestions": {
+    "/api/v1/confirmations/{confirmation_id}/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -280,8 +298,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ingestion */
-        post: operations["ingestion_api_v1_ingestions_post"];
+        /** Confirmation Resolve */
+        post: operations["confirmation_resolve_api_v1_confirmations__confirmation_id__resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -502,13 +520,24 @@ export interface components {
             application_id: string | null;
             /** Reason */
             reason: string;
-            /** Proposed Json */
-            proposed_json: {
-                [key: string]: unknown;
-            };
-            /** Status */
-            status: string;
+            status: components["schemas"]["ConfirmationState"];
+            proposal?: components["schemas"]["Extraction"] | null;
+            /** Candidates */
+            candidates?: components["schemas"]["ApplicationRead"][];
+            /**
+             * Message Excerpt
+             * @default
+             */
+            message_excerpt: string;
+            target_stage?: components["schemas"]["Stage"] | null;
+            /** Expected Application Version */
+            expected_application_version?: number | null;
         };
+        /**
+         * ConfirmationState
+         * @enum {string}
+         */
+        ConfirmationState: "pending" | "confirmed" | "rejected";
         /** DashboardData */
         DashboardData: {
             /** New Applications */
@@ -575,6 +604,43 @@ export interface components {
              */
             created_at: string;
         };
+        /** Extraction */
+        Extraction: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "create_application" | "update_stage" | "record_result" | "schedule_interview" | "query" | "unknown";
+            /** Application Code */
+            application_code?: string | null;
+            /** Candidate Name */
+            candidate_name?: string | null;
+            /** Position Name */
+            position_name?: string | null;
+            stage?: components["schemas"]["Stage"] | null;
+            /** Interview Round */
+            interview_round?: number | null;
+            /** Interview Result */
+            interview_result?: ("pending" | "passed" | "failed" | "cancelled") | null;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Interviewer */
+            interviewer?: string | null;
+            next_interview?: components["schemas"]["ScheduleProposal"] | null;
+            /** Missing Fields */
+            missing_fields?: string[];
+            /** Ambiguities */
+            ambiguities?: string[];
+            /** Source Spans */
+            source_spans?: {
+                [key: string]: string;
+            };
+            /**
+             * Should Confirm
+             * @default false
+             */
+            should_confirm: boolean;
+        };
         /** Health */
         Health: {
             /**
@@ -586,12 +652,12 @@ export interface components {
             /**
              * Mode
              * @default mock
-             * @constant
+             * @enum {string}
              */
-            mode: "mock";
+            mode: "mock" | "hybrid";
             /**
              * Note
-             * @default No external API used
+             * @default Business connectors are mock; parser provider is separately configured
              */
             note: string;
         };
@@ -611,6 +677,40 @@ export interface components {
              */
             authentication: "development_only";
         };
+        /** IngestionRead */
+        IngestionRead: {
+            /** Id */
+            id: string;
+            /** Version */
+            version: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Source */
+            source: string;
+            /** External Event Id */
+            external_event_id: string | null;
+            /** State */
+            state: string;
+            /** Error Code */
+            error_code: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Message Excerpt */
+            message_excerpt: string;
+            extraction?: components["schemas"]["Extraction"] | null;
+            result?: components["schemas"]["IngestionResult"] | null;
+        };
         /** IngestionRequest */
         IngestionRequest: {
             /** Text */
@@ -623,18 +723,27 @@ export interface components {
              * @enum {string}
              */
             source: "manual" | "wecom_mock";
+            /**
+             * Execute If Unambiguous
+             * @default true
+             */
+            execute_if_unambiguous: boolean;
         };
         /** IngestionResult */
         IngestionResult: {
+            /** Ingestion Id */
+            ingestion_id?: string | null;
             /**
              * Status
              * @enum {string}
              */
-            status: "applied" | "needs_confirmation" | "duplicate";
+            status: "applied" | "needs_confirmation" | "duplicate" | "parsing" | "failed";
             /** Reason */
             reason?: string | null;
+            /** Reason Code */
+            reason_code?: string | null;
             /** Intent */
-            intent?: ("create_application" | "update_stage") | null;
+            intent?: ("create_application" | "update_stage" | "record_result" | "schedule_interview" | "query" | "unknown") | null;
             /** Application Id */
             application_id?: string | null;
             application?: components["schemas"]["ApplicationRead"] | null;
@@ -645,24 +754,38 @@ export interface components {
             /**
              * Mode
              * @default mock
-             * @constant
+             * @enum {string}
              */
-            mode: "mock";
+            mode: "mock" | "hybrid";
+            /**
+             * Parser Provider
+             * @default mock
+             * @enum {string}
+             */
+            parser_provider: "mock" | "deepseek";
         };
         /** IntegrationStatus */
         IntegrationStatus: {
             /**
              * Mode
              * @default mock
-             * @constant
+             * @enum {string}
              */
-            mode: "mock";
+            mode: "mock" | "hybrid";
             /**
              * Deepseek
              * @default not_connected
-             * @constant
+             * @enum {string}
              */
-            deepseek: "not_connected";
+            deepseek: "not_connected" | "blocked_by_credentials" | "configured_not_verified" | "mode_mismatch";
+            /**
+             * Parser Provider
+             * @default mock
+             * @enum {string}
+             */
+            parser_provider: "mock" | "deepseek";
+            /** Model */
+            model?: string | null;
             /**
              * Tencent Docs
              * @default mock_only
@@ -721,13 +844,10 @@ export interface components {
             application_id: string;
             /** Round */
             round: number;
-            /**
-             * Scheduled At
-             * Format: date-time
-             */
-            scheduled_at: string;
+            /** Scheduled At */
+            scheduled_at: string | null;
             /** Interviewer */
-            interviewer: string;
+            interviewer: string | null;
             /**
              * Status
              * @enum {string}
@@ -769,6 +889,14 @@ export interface components {
         ListResponse_EventRead_: {
             /** Data */
             data: components["schemas"]["EventRead"][];
+            /** Request Id */
+            request_id: string;
+            pagination: components["schemas"]["Pagination"];
+        };
+        /** ListResponse[IngestionRead] */
+        ListResponse_IngestionRead_: {
+            /** Data */
+            data: components["schemas"]["IngestionRead"][];
             /** Request Id */
             request_id: string;
             pagination: components["schemas"]["Pagination"];
@@ -863,6 +991,45 @@ export interface components {
             /** Active */
             active: boolean;
         };
+        /** ResolutionResult */
+        ResolutionResult: {
+            /** Confirmation Id */
+            confirmation_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "confirmed" | "rejected";
+            /** Version */
+            version: number;
+            application?: components["schemas"]["ApplicationRead"] | null;
+        };
+        /** ResolveRequest */
+        ResolveRequest: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "confirm" | "modify" | "reject";
+            /** Change Reason */
+            change_reason: string;
+            /** Application Id */
+            application_id?: string | null;
+            /** Expected Application Version */
+            expected_application_version?: number | null;
+            /** Candidate Id */
+            candidate_id?: string | null;
+            /** Position Id */
+            position_id?: string | null;
+            /** Interview Id */
+            interview_id?: string | null;
+            /**
+             * Create New Candidate
+             * @default false
+             */
+            create_new_candidate: boolean;
+            correction?: components["schemas"]["Extraction"] | null;
+        };
         /** Response[ApplicationMutation] */
         Response_ApplicationMutation_: {
             data: components["schemas"]["ApplicationMutation"];
@@ -929,6 +1096,12 @@ export interface components {
             /** Request Id */
             request_id: string;
         };
+        /** Response[ResolutionResult] */
+        Response_ResolutionResult_: {
+            data: components["schemas"]["ResolutionResult"];
+            /** Request Id */
+            request_id: string;
+        };
         /** Response[SyncRun] */
         Response_SyncRun_: {
             data: components["schemas"]["SyncRun"];
@@ -947,6 +1120,15 @@ export interface components {
          * @enum {string}
          */
         Role: "HR" | "MANAGER" | "ADMIN";
+        /** ScheduleProposal */
+        ScheduleProposal: {
+            /** Round */
+            round: number;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Interviewer */
+            interviewer?: string | null;
+        };
         /**
          * Stage
          * @enum {string}
@@ -3365,7 +3547,7 @@ export interface operations {
             };
         };
     };
-    confirmations_api_v1_confirmations_get: {
+    ingestions_api_v1_ingestions_get: {
         parameters: {
             query?: {
                 page?: number;
@@ -3385,7 +3567,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListResponse_ConfirmationRead_"];
+                    "application/json": components["schemas"]["ListResponse_IngestionRead_"];
                 };
             };
             /** @description Bad Request */
@@ -3475,6 +3657,188 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Response_IngestionResult_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmations_api_v1_confirmations_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                status?: string;
+            };
+            header?: {
+                "x-dev-user"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListResponse_ConfirmationRead_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmation_resolve_api_v1_confirmations__confirmation_id__resolve_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "If-Match": number;
+                "Idempotency-Key"?: string | null;
+                "x-dev-user"?: string | null;
+            };
+            path: {
+                confirmation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Response_ResolutionResult_"];
                 };
             };
             /** @description Bad Request */

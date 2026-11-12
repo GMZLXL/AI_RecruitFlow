@@ -13,9 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 os.environ["APP_ENV"] = "development"
 os.environ["APP_MODE"] = "mock"
 
+from app.core.config import PROJECT_ROOT  # noqa: E402
 from app.main import app  # noqa: E402
 
-path = Path(__file__).resolve().parents[3] / "contracts" / "openapi.yaml"
+path = PROJECT_ROOT / "contracts" / "openapi.yaml"
 parser = argparse.ArgumentParser()
 parser.add_argument("--check", action="store_true")
 args = parser.parse_args()

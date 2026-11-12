@@ -1,6 +1,6 @@
 # 后端 Mock Starter
 
-S1本机Mock：已实现领域模型、Alembic、业务CRUD、开发RBAC、状态机/乐观锁、软删除和事务审计/outbox。生产认证、完整AI审核和真正DeepSeek/MCP/企微未接入，生产运行被主动阻止。
+S2本机开发：已实现领域模型、Alembic、CRUD/权限/状态机/版本、Parser协议、接入租约与人工审核。main仅装配应用，api/services/db/schemas/core/integrations分层；运行脚本位于scripts/contracts、migrations、smoke。生产认证与真实MCP/企微未接入；DeepSeek适配器已实现但无凭证联调。
 
 ```bash
 python -m venv .venv

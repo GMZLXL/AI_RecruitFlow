@@ -78,8 +78,8 @@ class Interview(Entity, Base):
     )
     application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), index=True)
     round: Mapped[int] = mapped_column(Integer)
-    scheduled_at: Mapped[datetime] = mapped_column(UTCDateTime())
-    interviewer: Mapped[str] = mapped_column(String(100))
+    scheduled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    interviewer: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(30), default="scheduled")
     result: Mapped[str] = mapped_column(String(30), default="pending")
     feedback_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
@@ -96,6 +96,8 @@ class IngestionJob(Entity, Base):
     extracted_json: Mapped[dict] = mapped_column(JSON, default=dict)
     error_code: Mapped[str | None] = mapped_column(String(80))
     received_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utcnow)
+    processing_token: Mapped[str | None] = mapped_column(String(36))
+    processing_started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
 class Confirmation(Entity, Base):

@@ -22,7 +22,7 @@ DEV_IDS = {alias: str(uuid.uuid5(uuid.NAMESPACE_URL, f"recruitflow:dev:{alias}")
 def dev_auth_enabled() -> bool:
     return (
         os.getenv("APP_ENV", "development") == "development"
-        and os.getenv("APP_MODE", "mock") == "mock"
+        and os.getenv("APP_MODE", "mock") in {"mock", "hybrid"}
         and os.getenv("DEV_AUTH_ENABLED", "true").lower() == "true"
     )
 

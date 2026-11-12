@@ -37,3 +37,9 @@ def client():
             connection.execute(table.delete())
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def isolated_parser_config(monkeypatch):
+    monkeypatch.setenv("AI_PROVIDER", "mock")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
