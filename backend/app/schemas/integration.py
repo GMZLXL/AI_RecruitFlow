@@ -61,13 +61,7 @@ class ApplicationProjection(Schema):
     version: int = Field(ge=1)
     deleted: bool = False
     updated_at: datetime
-
-
-class DashboardData(Schema):
-    new_applications: int = Field(ge=0)
-    by_stage: dict[Stage, int]
-    pending_sync: int = Field(ge=0)
-    mode: Literal["mock"] = "mock"
+    offer_status: Literal["sent", "accepted", "declined"] | None = None
 
 
 class Health(Schema):

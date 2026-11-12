@@ -1,5 +1,66 @@
 # AI RecruitFlow 实施报告
 
+## S4 实际交付（2026-11-12）
+
+```text
+阶段：S4
+已完成：七页工作台；授权数据库看板/阶段分布/周趋势/岗位进度；筛选/分页/详情历史/面试与待办；移动端AI审核；独立Offer发出/接受/拒绝与已录用统计；24条虚构申请的幂等样本；加载/空/错/冲突与路由权限；图表与路由分包。
+本阶段变更文件：见下方分组；统一Pydantic→OpenAPI 0.5.0（27路径）→TypeScript已生成同步。
+数据库迁移：0004_s4，仅新增offers表及约束；本机S3库已升级，空库升降/重升、S0复制/S2兼容、PostgreSQL离线DDL和Alembic check通过。
+运行的命令：npm run check；npm run test:api/test:web；npm run typecheck/lint/build；npm run contracts:generate/check；npm run db:upgrade/db:check；npm run demo:seed；npm run smoke:workbench/smoke:http；compileall；生产构建preview；界面静态检测与浏览器验收。
+测试结果：后端132通过，前端12通过，失败0，跳过0。完整聚合check通过；最后两项界面修复后，类型/12项组件/build/lint再次通过。HTTP全链路、Offer/权限联调、多尺寸浏览器及生产构建3个图表运行通过。
+未完成/阻塞：真实DeepSeek/MCP/企微无凭证联调；自动通知/提醒留S5，生产身份及部署留S6。本轮未进入S5，不把Mock验收当真实集成通过。
+重要风险：仅本机开发身份；MVP每申请一条Offer且反馈不可直接逆转，不含多轮谈判；保留1条上游测试客户端警告及535KB主分包警告；实际PostgreSQL和Linux/macOS未实机验证。
+下一阶段：S5（企业微信应用接入与提醒）。
+```
+
+### 统一结构与变更文件
+
+- backend/app/schemas/workbench.py：Offer、统计/周趋势/岗位进度、待办、审计历史、选项/规则读取；schemas/recruitment.py新增owner_name/next_interview_at/latest_result/sync_status派生字段；integration投影可空offer_status。
+- backend/app/db/models.py、db出口、alembic/versions/0004_s4_offers.py：独立Offer实体、申请唯一外键、sent/accepted/declined状态与UTC发出/反馈时点、独立version。
+- backend/app/services/workbench.py/offers.py、services/common.py：统一授权申请筛选、SQL聚合/分页待办、安全历史摘要、Offer业务事务及父申请投影。api/v1/workbench.py/dashboard.py/applications.py与路由装配，main版本0.5.0。
+- frontend/src/app/App.tsx与pages/{Dashboard,Candidates,ApplicationDetail,AIInbox,Tasks,SyncCenter,Settings}.tsx：完整导航、路由保护和功能页面。features/recruitment分离创建/筛选/日期/状态/阶段/面试/Offer/历史，features/dashboard只注册所用ECharts模块，features/shared/useResource取消旧请求。
+- frontend/src/components/RemoteState/AppErrorBoundary：加载、错误恢复、空态和异常边界；styles/global.css、main中文locale/主题、vite.config分包；services/api继续从生成operations/components提取领域类型。
+- backend/scripts/demo/seed.py、scripts/smoke/workbench.py、根npm命令；后端S4/样本回归；frontend/src/test、vitest.config及npm测试依赖/统一锁文件。Node要求按实际Vitest/jsdom engines同步为22.13（22.x）或24.x/26+，本机24.14。
+- README、backend/frontend README、.env.example、实施状态、docs/04/05/06/09/11/13/14、S4计划及frontend PRODUCT/DESIGN同步。未提交.env、数据库、Token、依赖目录或截图。
+
+### 统计、Offer与权限口径
+
+用户明确补充同时加入Offer反馈和虚构人名/岗位，因此先扩展契约及0004_s4，再写业务/页面。Offer发出只在Offer阶段登记已经发生的事实，不实际发送消息；接受不自动录用，拒绝不自动淘汰，录用仍需授权人员独立登记。旧hired没有Offer记录时不补造接受事实；接受率只统计接受/(接受+拒绝)，无反馈返回null。发出和反馈时点、阶段、权限、幂等、版本均在服务端校验，Offer/audit/outbox及父申请更新同事务。
+
+Dashboard以授权申请创建日期的[from,to)形成集合，面试/Offer统计这个集合关联的实际事实；Web默认近30天。岗位/负责人/阶段/日期与列表重用过滤；列表另支持姓名编号/渠道。周一按上海日期聚合；阶段图明确是当前快照，不伪称历史转化率；岗位编制与已录用/申请量分别说明。无数据时三图显示明确空态，接受率不伪造0%。
+
+待办为SQL分页事实投影：未来已安排面试、计划已过仍待反馈、待审核、7天未更新及最新申请投影故障；对应业务处理后自动移出，不新增任意“标记完成”捷径，不声称企微提醒已发送。History只返回白名单变化、操作人及脱敏依据，不回传原始消息或凭证。HR本人、经理部门只读、管理员全局；设置连接状态及同步任务继续管理员专用，前端隐藏不能代替后端403。
+
+### 虚构数据与幂等
+
+`npm run demo:seed`实际首次输出**added=24, kept_existing=0**，再运行输出**added=0, kept_existing=24**。24条申请使用DEMO_S4_01~24，23位候选人、4个演示岗位，来源“演示样本”、备注“S4虚构演示”。姓名如林沐、陈禾、周宁、宋言，含一人多岗与另一个同名人；岗位含前端、数据分析、Python、客户成功。历史日期/过去面试只在明确的演示初始化中生成并审计，公共API的未来面试限制保持有效。
+
+脚本仅允许development+mock+Mock投影，不覆盖、删除或重置原有记录；已有样本人工修改保留，样本编号冲突会拒绝。全量回归验证原记录version/stage保持不变、一人多岗ID关联、二次运行数量不增。隔离测试初始样本有6条Offer、4接受/1拒绝/1未反馈、3已录用；这些是样本事实，不是产品硬编码指标，Web操作后会自然变化。
+
+### 实际验证
+
+聚合`npm run check`通过：**132 passed, 1 warning in 22.71s**；前端**3 files / 12 tests passed**，当次27.61s。最后界面两项修复后再次类型通过、组件**12 passed in 18.13s**、build **12.88s**、Ruff/ESLint通过。`db:check`为**No new upgrade operations detected**；compileall与契约漂移检查通过。最终阶段说明/契约更新后，OpenAPI及生产模式阻断3项再次通过（5.41s，属上述132项子集）。保留原失败测试意图，修正了日期[from,to)相等应为空集的兼容回归，没有删除失败用例或关闭检查；已删除被完整页面替代且无引用的FeaturePending占位组件。
+
+新增回归覆盖Offer/录用独立、接受率排除未反馈、状态/时点/越权/版本/幂等、审计失败回滚、筛选SQL与列表一致、上海周边界、待办分页与范围、样本幂等。组件覆盖空数据/错误重试、上海日期半开区间/闰日、渠道与搜索、取消旧请求、阶段409保留输入、人工Offer反馈不调用录用、AI事件重试同ID、Web审核目标版本、认证/路由权限。图表空态测试不创建示例图形；实际浏览器和生产构建另验真实渲染，不拿jsdom当布局证据。
+
+真实HTTP结果：**PASS: S4 filters + Offer sent/accepted/replay + independent manual hire + history + tasks + RBAC**，保留虚构WEB_S4_2BCF6BD7；原全链路脚本仍为**PASS: web 5173 + proxy + API 8000 + create/result/schedule/review/dedupe/dashboard/async mock sync**。
+
+浏览器实测1440/1024/390px，移动显式导航、表格内横滚、详情与设置/同步均可用；稳定后viewport1024/document1009、viewport390/document375（滚动条宽度）无页面横向溢出。初次即时resize截图有异步图表尺寸瞬态，最终在布局稳定后重截；本机截图位于忽略的.tools/s4-*.jpg，不属于Git交付文件。
+
+390px实际登记DEMO_S4_05宋言接受Offer，申请仍保持Offer阶段；对“陈禾进入一面”核对DEMO_S4_02并确认，结果面板更新为一面；复验“陈禾进入二面”并驳回，未继续推进。模拟HR乙跨部门直开详情返回403且不展示陈禾资料；模拟负责人可读但没有更新按钮；最后恢复模拟管理员。生产构建在4173临时预览，实际3个canvas图表、数据库指标可见，控制台error=[]，之后关闭预览服务并恢复默认浏览器视口。
+
+界面评审disposition：**ship**，remaining：**clear**。
+
+| 原问题 | 最终结果 | 证据 |
+|---|---|---|
+| F1 审核信息层级 | resolved | 按意图显示必要字段，高级匹配默认折叠；390px阶段审核三个按钮首屏可见 |
+| F2 来源渠道筛选 | resolved | 来源“演示样本”实际返回25条（24样本+1联调），值保留并传递后端；组件回归覆盖 |
+
+构建由S3约2.38MB单主包改为路由/表格/图表/框架等独立加载；最终主分包535.46KB、框架262.35KB、图表引擎367.17KB、渲染器186.51KB。仍有535KB阈值警告，未调高阈值隐藏；不以单个分包缩小冒充总流量或性能达标。未做真实PostgreSQL、跨平台、生产认证、三方授权或所有辅助技术/浏览器验收；下一阶段S5。
+
+以下为S3/S2/S1/S0历史记录，当前状态以上述S4为准。
+
 ## S3 实际交付（2026-11-12）
 
 ```text

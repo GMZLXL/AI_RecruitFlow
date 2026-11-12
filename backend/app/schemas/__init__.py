@@ -26,7 +26,6 @@ from .common import (
 from .identity import Identity, UserRead
 from .integration import (
     ApplicationProjection,
-    DashboardData,
     Health,
     IntegrationStatus,
     SyncJob,
@@ -50,8 +49,23 @@ from .recruitment import (
     PositionPatch,
     PositionRead,
 )
+from .workbench import (
+    DashboardData,
+    HistoryRead,
+    OfferCreate,
+    OfferPatch,
+    OfferRead,
+    PolicyRead,
+    PositionProgress,
+    RecruitmentOptions,
+    TaskKind,
+    TaskRead,
+    WeeklyCount,
+)
 
 __all__ = [
+    "OfferCreate", "OfferPatch", "OfferRead", "RecruitmentOptions", "TaskRead", "TaskKind",
+    "HistoryRead", "PolicyRead", "PositionProgress", "WeeklyCount",
     "ApplicationProjection",
     "SyncRetry",
     "SyncSummary",

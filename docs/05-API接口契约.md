@@ -1,6 +1,29 @@
 # 05｜REST API 接口契约（v1）
 
-## S3 当前增量（优先于历史契约）
+## S4 当前增量（优先于历史契约）
+
+运行OpenAPI为0.5.0、27个实际路径。唯一Pydantic源仍位于schemas，所有前端领域类型继续生成，页面不复制业务协议。
+
+| 方法/路径（统一前缀/api/v1） | 行为 |
+|---|---|
+| GET /dashboard/overview | 新增from/to（aware datetime、[from,to)）、position_id/owner_id/stage；与列表重用授权和筛选条件 |
+| GET /recruitment/options | 读取授权岗位与可见负责人；keyword筛选，各最多100条，不返回密钥或联系方式 |
+| GET /tasks | page/page_size、kind(interview/feedback/review/stalled/sync)、owner_id/position_id、from/to参考时间筛选 |
+| GET /settings/policy | 当前业务时区、7天停滞阈值、阶段推进白名单、提醒尚未启用说明；不读密钥 |
+| GET /applications/{id}/history | 先授权申请，再分页读取安全审计摘要：action、actor_name、reason、changes白名单、created_at |
+| GET /applications/{id}/offer | data为OfferRead或null；null是没有登记事实，不推断已发出/接受 |
+| POST /applications/{id}/offer | 201；Idempotency-Key、If-Match为申请version；body:sent_at/change_reason |
+| PATCH /applications/{id}/offer | Idempotency-Key、If-Match为Offer version；body:status(accepted/declined)、responded_at/change_reason |
+
+OfferRead包含id/application_id/status/sent_at/responded_at/version/created_at/updated_at。只登记事实，不发Offer、不改录用阶段。创建限制Offer阶段与正确发出时点；反馈限制sent状态及发出至当前之间的时点。越权403、过期版本/重复创建/逆转409、缺幂等键400、非法结构422、非法时点400；同键同内容重放原响应。业务、Offer、父申请版本、audit/outbox同事务，外部IO不进入事务。
+
+DashboardData保留new_applications/by_stage/pending_sync/mode，增加candidates去重人数、upcoming_interviews、pending_feedback、offers_sent/accepted/declined、offer_acceptance_rate、hired_applications、weekly_new、by_position、timezone/population。统计按申请创建时间形成的授权集合，再统计这些申请的面试/Offer事实；不是按Offer发出日期统计当期发送量。前端默认近30天，后端无日期参数仍返回全部授权申请以保持旧调用语义。from=to返回空集合，from>to为422。
+
+接受率=accepted/(accepted+declined)，无明确反馈返回null，排除sent未回复；历史hired且没有独立Offer的申请不伪造为accepted。周趋势以Asia/Shanghai周一分组，岗位数量为过滤集合，编制为该岗位配置值。pending_sync从S4起只计申请投影的pending/processing/failed/dead，不把内部归档当成外部待同步。
+
+ApplicationRead新增可空派生owner_name/next_interview_at/latest_result/sync_status。候选人列表支持现有keyword、岗位、负责人、阶段、来源渠道和创建时间；Dashboard仅提供日期/岗位/负责人/阶段，共同条件的口径一致。Tasks.at是参考时点：面试计划、审核/同步创建时间、停滞最后更新时间；对应业务处理后自动移出，没有任意“虚假完成”接口。AI审核API保持S2强类型与版本语义，表单按意图显示字段，高级ID匹配默认折叠。
+
+## S3 历史增量（由S4增补）
 
 运行OpenAPI为0.4.0、22个实际路径；Pydantic源、OpenAPI和前端生成类型已同步。
 

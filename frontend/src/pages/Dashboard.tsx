@@ -1,31 +1,31 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Card, Col, Row, Statistic, Typography } from 'antd';
-import { api, type DashboardData } from '../services/api';
+import { lazy, Suspense, useCallback, useState } from 'react';
+import { Button, Card, Typography } from 'antd';
+import { Link } from 'react-router-dom';
+import { api } from '../services/api';
 import PageHead from '../components/PageHead';
-import ReactECharts from 'echarts-for-react';
-import { stageLabel } from '../features/recruitment/presentation';
-const { Text } = Typography;
+import FilterBar from '../features/recruitment/FilterBar';
+import { filterParams, recentDates, type Filters } from '../features/recruitment/filters';
+import { useResource } from '../features/shared/useResource';
+import { ErrorState, LoadState } from '../components/RemoteState';
+const Charts = lazy(() => import('../features/dashboard/Charts'));
+const initial = recentDates();
+
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [error, setError] = useState('');
-  const load = useCallback(async () => { try { setError(''); setData(await api.dashboard()); } catch { setError('无法连接后端，请确认 FastAPI 已启动。'); } }, []);
-  useEffect(() => { void load(); }, [load]);
-  const chart = useMemo(() => ({
-    tooltip: { trigger: 'axis' }, grid: { left: 40, right: 20, top: 25, bottom: 40 },
-    xAxis: { type: 'category', data: Object.keys(data?.by_stage || {}).map(stageLabel) },
-    yAxis: { type: 'value', minInterval: 1 },
-    series: [{ type: 'bar', barWidth: 45, data: Object.values(data?.by_stage || {}), itemStyle: { color: '#1677ff', borderRadius: [6, 6, 0, 0] } }]
-  }), [data]);
+  const [filters, setFilters] = useState<Filters>(initial);
+  const result = useResource(useCallback((signal: AbortSignal) => api.dashboard(filterParams(filters), signal), [filters]));
+  const data = result.data;
   return <>
-    <PageHead title="招聘工作台" desc="招聘数据直接来自本地数据库，演示环境不连接真实腾讯文档。" />
-    {error && <Alert type="error" showIcon message={error} action={<Button size="small" onClick={() => void load()}>重试</Button>} />}
-    <Row gutter={[16,16]}>
-      <Col xs={24} md={8}><Card><Statistic title="招聘申请总数" value={data?.new_applications ?? '—'} /></Card></Col>
-      <Col xs={24} md={8}><Card><Statistic title="等待模拟同步" value={data?.pending_sync ?? '—'} /></Card></Col>
-      <Col xs={24} md={8}><Card><Statistic title="运行环境" value="Mock" valueStyle={{fontSize: 23}} /></Card></Col>
-    </Row>
-    <Card className="section-card" title="招聘阶段分布" extra={<Button onClick={() => void load()}>刷新</Button>}>
-      {!data || Object.keys(data.by_stage).length === 0 ? <Text type="secondary">暂无申请数据，可在“候选人记录”或“AI录入”新增演示记录。</Text> : <ReactECharts option={chart} style={{height:320}} />}
-    </Card>
+    <PageHead title="招聘工作台" desc="按申请创建时间与授权范围查询。演示样本为虚构资料，指标由实际数据库记录计算。" />
+    <Card className="filters-card"><FilterBar initial={initial} onSearch={setFilters} /></Card>
+    {result.error ? <ErrorState error={result.error} retry={result.reload} /> : result.loading || !data ? <LoadState /> : <>
+      <div className="metric-strip" aria-label="招聘指标">{[
+        ['新增申请', data.new_applications], ['候选人数', data.candidates], ['待面试', data.upcoming_interviews], ['待反馈', data.pending_feedback],
+        ['Offer已发出', data.offers_sent], ['已接受', data.offers_accepted], ['已拒绝', data.offers_declined], ['已录用', data.hired_applications],
+      ].map(([label, value]) => <div className="metric" key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
+      <div className="dashboard-context"><Typography.Text>Offer接受率：<strong>{data.offer_acceptance_rate === null ? '暂无明确反馈' : `${(data.offer_acceptance_rate * 100).toFixed(1)}%`}</strong>（接受 ÷ 接受与拒绝，排除未反馈；接受不等于录用）</Typography.Text>
+        <Link to="/tasks">查看面试与待办</Link><Button size="small" onClick={result.reload}>刷新数据</Button></div>
+      <Typography.Paragraph type="secondary">{data.population}。未完成申请投影任务：{data.pending_sync}，不含内部事件。</Typography.Paragraph>
+      <Suspense fallback={<LoadState />}><Charts data={data} /></Suspense>
+    </>}
   </>;
 }

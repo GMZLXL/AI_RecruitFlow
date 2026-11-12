@@ -85,6 +85,17 @@ class Interview(Entity, Base):
     feedback_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
+class Offer(Entity, Base):
+    __tablename__ = "offers"
+    __table_args__ = (
+        CheckConstraint("status IN ('sent','accepted','declined')", name="ck_offer_status"),
+    )
+    application_id: Mapped[str] = mapped_column(ForeignKey("applications.id"), unique=True)
+    status: Mapped[str] = mapped_column(String(20), default="sent")
+    sent_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
 class IngestionJob(Entity, Base):
     __tablename__ = "ingestion_jobs"
     __table_args__ = (UniqueConstraint("source", "external_event_id", name="uq_ingestion_source_event"),)

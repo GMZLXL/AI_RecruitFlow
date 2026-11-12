@@ -1,15 +1,9 @@
-from __future__ import annotations
-
-from fastapi import APIRouter, Request
-from sqlalchemy import func, select
+from fastapi import APIRouter, Query, Request
+from pydantic import AwareDatetime
 
 from app import schemas as s
-from app import services as svc
-from app.db import (
-    Application,
-    Outbox,
-)
-from app.domain import Role, Stage
+from app.domain import Stage
+from app.services.workbench import dashboard_data
 
 from .common import DB, Actor, envelope
 
@@ -17,19 +11,19 @@ router = APIRouter()
 
 
 @router.get("/dashboard/overview", response_model=s.Response[s.DashboardData])
-def dashboard(request: Request, db: DB, actor: Actor):
-    scope = svc.visibility(Application, actor)
-    total = db.scalar(select(func.count(Application.id)).where(scope)) or 0
-    stages = {
-        Stage(stage): count
-        for stage, count in db.execute(
-            select(Application.stage, func.count(Application.id)).where(scope).group_by(Application.stage)
-        )
-    }
-    visible_ids = select(Application.id).where(scope)
-    jobs = select(func.count(Outbox.id)).where(Outbox.status.in_(["pending", "processing", "failed", "dead"]))
-    if actor.role != Role.ADMIN:
-        jobs = jobs.where(Outbox.application_id.in_(visible_ids))
+def dashboard(
+    request: Request,
+    db: DB,
+    actor: Actor,
+    from_at: AwareDatetime | None = Query(None, alias="from"),
+    to: AwareDatetime | None = None,
+    position_id: s.Id | None = None,
+    owner_id: s.Id | None = None,
+    stage: Stage | None = None,
+):
     return envelope(
-        request, s.DashboardData(new_applications=total, by_stage=stages, pending_sync=db.scalar(jobs) or 0)
+        request,
+        dashboard_data(
+            db, actor, from_at=from_at, to=to, position_id=position_id, owner_id=owner_id, stage=stage
+        ),
     )

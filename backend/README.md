@@ -1,4 +1,6 @@
-# 后端 Mock Starter
+# 后端服务（开发 Mock）
+
+当前S4：新增独立offers、工作台聚合统计/安全历史/待办投影/岗位负责人选项与规则读取。0004_s4迁移已验证；前后端契约源不变。根npm run demo:seed生成24条明确标记的虚构申请；npm run smoke:workbench验证Offer与录用分离及权限。详情见根README和实施报告，下方保留基础运行方法。
 
 S3本机开发：已实现领域模型、Alembic、CRUD/权限/状态机/版本、Parser与人工审核、异步outbox与持久Mock投影。main仅装配应用，api/services/db/schemas/core/integrations/jobs分层；脚本按contracts、migrations、smoke、integrations分目录。生产认证与真实MCP/企微未接入；腾讯适配器因凭证/实测Schema缺失而阻断写入。
 

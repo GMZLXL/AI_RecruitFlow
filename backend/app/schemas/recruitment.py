@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import AwareDatetime, Field, model_validator
 
-from app.domain import Outcome, Stage
+from app.domain import Outcome, Stage, SyncState
 
 from .common import (
     CustomFields,
@@ -91,6 +91,10 @@ class ApplicationRead(EntityRead):
     stage: Stage
     outcome: Outcome
     custom_fields: CustomFields
+    owner_name: str | None = None
+    next_interview_at: AwareDatetime | None = None
+    latest_result: Literal["passed", "failed"] | None = None
+    sync_status: SyncState | None = None
 
 
 class ApplicationMutation(Schema):

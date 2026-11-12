@@ -9,7 +9,7 @@ from typing import NoReturn
 from sqlalchemy import select, true, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app import schemas as s
 from app.core.errors import BusinessError
@@ -21,12 +21,14 @@ from app.db import (
     Confirmation,
     Event,
     IdempotencyRecord,
+    Interview,
+    Offer,
     Outbox,
     Position,
     User,
     utcnow,
 )
-from app.domain import Outcome, Role, Stage
+from app.domain import Outcome, Role, Stage, SyncState
 from app.integrations.smartsheet.factory import sync_provider
 
 
@@ -75,6 +77,19 @@ def get_entity(db: Session, model, entity_id: str, actor: User, *, write=False, 
 
 
 def application_read(obj: Application) -> s.ApplicationRead:
+    db = object_session(obj)
+    owner = db.get(User, obj.owner_id) if db else None
+    upcoming = db.scalar(select(Interview.scheduled_at).where(
+        Interview.application_id == obj.id, Interview.deleted_at.is_(None),
+        Interview.status == "scheduled", Interview.scheduled_at >= utcnow(),
+    ).order_by(Interview.scheduled_at).limit(1)) if db else None
+    result = db.scalar(select(Interview.result).where(
+        Interview.application_id == obj.id, Interview.deleted_at.is_(None),
+        Interview.status == "completed", Interview.result.in_(["passed", "failed"]),
+    ).order_by(Interview.feedback_at.desc(), Interview.id).limit(1)) if db else None
+    sync = db.scalar(select(Outbox.status).where(
+        Outbox.entity_type == "applications", Outbox.entity_id == obj.id,
+    ).order_by(Outbox.version.desc()).limit(1)) if db else None
     return s.ApplicationRead(
         id=obj.id,
         application_code=obj.application_code,
@@ -90,6 +105,9 @@ def application_read(obj: Application) -> s.ApplicationRead:
         version=obj.version,
         created_at=obj.created_at,
         updated_at=obj.updated_at,
+        owner_name=owner.display_name if owner else None,
+        next_interview_at=upcoming, latest_result="passed" if result == "passed" else "failed" if result == "failed" else None,
+        sync_status=SyncState(sync) if sync else None,
     )
 
 
@@ -136,11 +154,13 @@ def record_change(
     )
     payload = {"schema_version": 1, "entity": after}
     if isinstance(obj, Application):
+        offer = db.scalar(select(Offer).where(Offer.application_id == obj.id, Offer.deleted_at.is_(None)))
         payload["projection"] = s.ApplicationProjection(
             application_id=obj.id, application_code=obj.application_code,
             candidate_name=obj.candidate.display_name, position_title=obj.position.title,
             stage=Stage(obj.stage), outcome=Outcome(obj.outcome), version=obj.version,
             deleted=obj.deleted_at is not None, updated_at=obj.updated_at,
+            offer_status=s.OfferRead.model_validate(offer).status if offer else None,
         ).model_dump(mode="json")
     db.add(
         Outbox(

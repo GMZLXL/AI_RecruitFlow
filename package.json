@@ -6,7 +6,7 @@
     "frontend"
   ],
   "engines": {
-    "node": ">=22.12.0",
+    "node": "^22.13.0 || ^24.0.0 || >=26.0.0",
     "npm": ">=10"
   },
   "scripts": {
@@ -19,9 +19,13 @@
     "contracts:check": "node scripts/contracts/check.mjs",
     "typecheck": "pyright && npm run typecheck --workspace frontend",
     "lint": "node scripts/workspace/python.mjs -m ruff check app tests scripts alembic && npm run lint --workspace frontend",
-    "test": "node scripts/workspace/python.mjs -m pytest -q",
+    "test": "npm run test:api && npm run test:web",
+    "test:api": "node scripts/workspace/python.mjs -m pytest -q",
+    "test:web": "npm run test --workspace frontend",
     "smoke:http": "node scripts/workspace/python.mjs -m scripts.smoke.http",
+    "smoke:workbench": "node scripts/workspace/python.mjs -m scripts.smoke.workbench",
     "smoke:sync-failure": "node scripts/workspace/python.mjs -m scripts.smoke.sync_failure",
+    "demo:seed": "node scripts/workspace/python.mjs -m scripts.demo.seed",
     "integrations:tencent:discover": "node scripts/workspace/python.mjs -m scripts.integrations.tencent_discover",
     "build": "npm run build --workspace frontend",
     "check": "npm run contracts:check && npm run lint && npm run typecheck && npm test && npm run build"

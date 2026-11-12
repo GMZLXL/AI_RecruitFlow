@@ -8,6 +8,7 @@ from .ingestion import router as ingestion_router
 from .interviews import router as interviews_router
 from .positions import router as positions_router
 from .sync import router as sync_router
+from .workbench import router as workbench_router
 
 router = APIRouter()
 router.include_router(identity_router)
@@ -18,3 +19,4 @@ router.include_router(interviews_router)
 router.include_router(ingestion_router)
 router.include_router(dashboard_router)
 router.include_router(sync_router)
+router.include_router(workbench_router)

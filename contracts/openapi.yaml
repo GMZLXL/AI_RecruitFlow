@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: AI RecruitFlow Mock API
-  description: S3 asynchronous SmartSheet projection; Tencent writes blocked until
-    authorized schemas are verified.
-  version: 0.4.0
+  description: S4 recruitment workbench and independent Offer facts; Tencent writes
+    remain blocked until authorized schemas are verified.
+  version: 0.5.0
 paths:
   /api/v1/health:
     get:
@@ -2482,6 +2482,50 @@ paths:
       summary: Dashboard
       operationId: dashboard_api_v1_dashboard_overview_get
       parameters:
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: position_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Position Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Owner Id
+      - name: stage
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Stage'
+          - type: 'null'
+          title: Stage
       - name: x-dev-user
         in: header
         required: false
@@ -2860,6 +2904,604 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Internal Server Error
+  /api/v1/recruitment/options:
+    get:
+      summary: Recruitment Options
+      operationId: recruitment_options_api_v1_recruitment_options_get
+      parameters:
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 120
+          default: ''
+          title: Keyword
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_RecruitmentOptions_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/tasks:
+    get:
+      summary: Tasks
+      operationId: tasks_api_v1_tasks_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: kind
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - interview
+            - feedback
+            - review
+            - stalled
+            - sync
+            type: string
+          - type: 'null'
+          title: Kind
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Owner Id
+      - name: position_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Position Id
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_TaskRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/settings/policy:
+    get:
+      summary: Settings Policy
+      operationId: settings_policy_api_v1_settings_policy_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_PolicyRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/applications/{application_id}/history:
+    get:
+      summary: Application History
+      operationId: application_history_api_v1_applications__application_id__history_get
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_HistoryRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/applications/{application_id}/offer:
+    get:
+      summary: Application Offer
+      operationId: application_offer_api_v1_applications__application_id__offer_get
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_Union_OfferRead__NoneType__'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Offer Create
+      operationId: offer_create_api_v1_applications__application_id__offer_post
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_OfferRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Offer Patch
+      operationId: offer_patch_api_v1_applications__application_id__offer_patch
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfferPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_OfferRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
 components:
   schemas:
     ApiError:
@@ -3048,6 +3690,29 @@ components:
             const: organization.referral_tag
           type: object
           title: Custom Fields
+        owner_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Name
+        next_interview_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Next Interview At
+        latest_result:
+          anyOf:
+          - type: string
+            enum:
+            - passed
+            - failed
+          - type: 'null'
+          title: Latest Result
+        sync_status:
+          anyOf:
+          - $ref: '#/components/schemas/SyncState'
+          - type: 'null'
       additionalProperties: false
       type: object
       required:
@@ -3239,6 +3904,39 @@ components:
           type: integer
           minimum: 0.0
           title: New Applications
+        candidates:
+          type: integer
+          minimum: 0.0
+          title: Candidates
+        upcoming_interviews:
+          type: integer
+          minimum: 0.0
+          title: Upcoming Interviews
+        pending_feedback:
+          type: integer
+          minimum: 0.0
+          title: Pending Feedback
+        offers_sent:
+          type: integer
+          minimum: 0.0
+          title: Offers Sent
+        offers_accepted:
+          type: integer
+          minimum: 0.0
+          title: Offers Accepted
+        offers_declined:
+          type: integer
+          minimum: 0.0
+          title: Offers Declined
+        offer_acceptance_rate:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Offer Acceptance Rate
+        hired_applications:
+          type: integer
+          minimum: 0.0
+          title: Hired Applications
         by_stage:
           additionalProperties:
             type: integer
@@ -3246,6 +3944,16 @@ components:
             $ref: '#/components/schemas/Stage'
           type: object
           title: By Stage
+        weekly_new:
+          items:
+            $ref: '#/components/schemas/WeeklyCount'
+          type: array
+          title: Weekly New
+        by_position:
+          items:
+            $ref: '#/components/schemas/PositionProgress'
+          type: array
+          title: By Position
         pending_sync:
           type: integer
           minimum: 0.0
@@ -3255,11 +3963,30 @@ components:
           const: mock
           title: Mode
           default: mock
+        timezone:
+          type: string
+          const: Asia/Shanghai
+          title: Timezone
+          default: Asia/Shanghai
+        population:
+          type: string
+          title: Population
+          default: 按申请创建时间与授权范围筛选；面试与Offer指标统计这些申请关联的实际记录
       additionalProperties: false
       type: object
       required:
       - new_applications
+      - candidates
+      - upcoming_interviews
+      - pending_feedback
+      - offers_sent
+      - offers_accepted
+      - offers_declined
+      - offer_acceptance_rate
+      - hired_applications
       - by_stage
+      - weekly_new
+      - by_position
       - pending_sync
       title: DashboardData
     DeleteRequest:
@@ -3478,6 +4205,39 @@ components:
       additionalProperties: false
       type: object
       title: Health
+    HistoryRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        action:
+          type: string
+          title: Action
+        actor_name:
+          type: string
+          title: Actor Name
+        reason:
+          type: string
+          title: Reason
+        changes:
+          additionalProperties:
+            type: string
+          type: object
+          title: Changes
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - action
+      - actor_name
+      - reason
+      - changes
+      - created_at
+      title: HistoryRead
     Identity:
       properties:
         user:
@@ -3931,6 +4691,25 @@ components:
       - request_id
       - pagination
       title: ListResponse[EventRead]
+    ListResponse_HistoryRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/HistoryRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[HistoryRead]
     ListResponse_IngestionRead_:
       properties:
         data:
@@ -4007,6 +4786,115 @@ components:
       - request_id
       - pagination
       title: ListResponse[SyncJob]
+    ListResponse_TaskRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/TaskRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[TaskRead]
+    OfferCreate:
+      properties:
+        sent_at:
+          type: string
+          format: date-time
+          title: Sent At
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - sent_at
+      - change_reason
+      title: OfferCreate
+    OfferPatch:
+      properties:
+        status:
+          type: string
+          enum:
+          - accepted
+          - declined
+          title: Status
+        responded_at:
+          type: string
+          format: date-time
+          title: Responded At
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - status
+      - responded_at
+      - change_reason
+      title: OfferPatch
+    OfferRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        application_id:
+          type: string
+          title: Application Id
+        status:
+          type: string
+          enum:
+          - sent
+          - accepted
+          - declined
+          title: Status
+        sent_at:
+          type: string
+          format: date-time
+          title: Sent At
+        responded_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Responded At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - application_id
+      - status
+      - sent_at
+      - responded_at
+      title: OfferRead
     Outcome:
       type: string
       enum:
@@ -4037,6 +4925,35 @@ components:
       - page_size
       - total
       title: Pagination
+    PolicyRead:
+      properties:
+        timezone:
+          type: string
+          const: Asia/Shanghai
+          title: Timezone
+          default: Asia/Shanghai
+        stalled_days:
+          type: integer
+          title: Stalled Days
+          default: 7
+        stage_transitions:
+          additionalProperties:
+            items:
+              $ref: '#/components/schemas/Stage'
+            type: array
+          propertyNames:
+            $ref: '#/components/schemas/Stage'
+          type: object
+          title: Stage Transitions
+        notice:
+          type: string
+          title: Notice
+          default: 待办来自实际记录；自动提醒与企微推送尚未启用。模拟身份仅用于开发。
+      additionalProperties: false
+      type: object
+      required:
+      - stage_transitions
+      title: PolicyRead
     PositionCreate:
       properties:
         title:
@@ -4096,6 +5013,35 @@ components:
       required:
       - change_reason
       title: PositionPatch
+    PositionProgress:
+      properties:
+        position_id:
+          type: string
+          title: Position Id
+        title:
+          type: string
+          title: Title
+        applications:
+          type: integer
+          minimum: 0.0
+          title: Applications
+        hired:
+          type: integer
+          minimum: 0.0
+          title: Hired
+        target_headcount:
+          type: integer
+          minimum: 0.0
+          title: Target Headcount
+      additionalProperties: false
+      type: object
+      required:
+      - position_id
+      - title
+      - applications
+      - hired
+      - target_headcount
+      title: PositionProgress
     PositionRead:
       properties:
         id:
@@ -4141,6 +5087,28 @@ components:
       - owner_user_id
       - active
       title: PositionRead
+    RecruitmentOptions:
+      properties:
+        positions:
+          items:
+            $ref: '#/components/schemas/PositionRead'
+          type: array
+          title: Positions
+        owners:
+          items:
+            $ref: '#/components/schemas/UserRead'
+          type: array
+          title: Owners
+        limit:
+          type: integer
+          title: Limit
+          default: 100
+      additionalProperties: false
+      type: object
+      required:
+      - positions
+      - owners
+      title: RecruitmentOptions
     ResolutionResult:
       properties:
         confirmation_id:
@@ -4354,6 +5322,32 @@ components:
       - data
       - request_id
       title: Response[InterviewRead]
+    Response_OfferRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/OfferRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[OfferRead]
+    Response_PolicyRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/PolicyRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[PolicyRead]
     Response_PositionRead_:
       properties:
         data:
@@ -4367,6 +5361,19 @@ components:
       - data
       - request_id
       title: Response[PositionRead]
+    Response_RecruitmentOptions_:
+      properties:
+        data:
+          $ref: '#/components/schemas/RecruitmentOptions'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[RecruitmentOptions]
     Response_ResolutionResult_:
       properties:
         data:
@@ -4419,6 +5426,21 @@ components:
       - data
       - request_id
       title: Response[SyncSummary]
+    Response_Union_OfferRead__NoneType__:
+      properties:
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/OfferRead'
+          - type: 'null'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[Union[OfferRead, NoneType]]
     Response_list_UserRead__:
       properties:
         data:
@@ -4654,6 +5676,63 @@ components:
       - tencent_docs
       - message
       title: SyncSummary
+    TaskRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        kind:
+          type: string
+          enum:
+          - interview
+          - feedback
+          - review
+          - stalled
+          - sync
+          title: Kind
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Id
+        application_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Code
+        candidate_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Candidate Name
+        position_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Position Title
+        at:
+          type: string
+          format: date-time
+          title: At
+        source_id:
+          type: string
+          title: Source Id
+        title:
+          type: string
+          title: Title
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - kind
+      - application_id
+      - application_code
+      - candidate_name
+      - position_title
+      - at
+      - source_id
+      - title
+      title: TaskRead
     UserRead:
       properties:
         id:
@@ -4694,3 +5773,19 @@ components:
       - department
       - active
       title: UserRead
+    WeeklyCount:
+      properties:
+        week:
+          type: string
+          format: date
+          title: Week
+        count:
+          type: integer
+          minimum: 0.0
+          title: Count
+      additionalProperties: false
+      type: object
+      required:
+      - week
+      - count
+      title: WeeklyCount

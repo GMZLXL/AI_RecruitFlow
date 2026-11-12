@@ -21,7 +21,7 @@ if os.getenv("APP_ENV", "development") != "development" or os.getenv("APP_MODE",
     "mock",
     "hybrid",
 }:
-    raise RuntimeError("S3 only supports development mock/hybrid; production identity is not implemented")
+    raise RuntimeError("S4 only supports development mock/hybrid; production identity is not implemented")
 
 
 @asynccontextmanager
@@ -42,9 +42,9 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="AI RecruitFlow Mock API",
-    version="0.4.0",
+    version="0.5.0",
     lifespan=lifespan,
-    description="S3 asynchronous SmartSheet projection; Tencent writes blocked until authorized schemas are verified.",
+    description="S4 recruitment workbench and independent Offer facts; Tencent writes remain blocked until authorized schemas are verified.",
     responses={code: {"model": s.ErrorResponse} for code in (400, 401, 403, 404, 409, 422, 500)},
 )
 app.add_middleware(

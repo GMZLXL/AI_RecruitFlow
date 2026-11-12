@@ -9,6 +9,7 @@ from .models import (
     IngestionJob,
     Interview,
     MockSheetRecord,
+    Offer,
     Outbox,
     Position,
     Reminder,
@@ -20,6 +21,7 @@ from .session import DATABASE_URL, SCHEMA_REVISION, SessionLocal, engine, get_db
 
 __all__ = [
     "Base",
+    "Offer",
     "MockSheetRecord",
     "SyncWorkerLease",
     "UTCDateTime",

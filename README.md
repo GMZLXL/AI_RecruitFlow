@@ -2,7 +2,7 @@
 
 招聘记录自动化系统：React/TypeScript/Vite/Ant Design + FastAPI/Pydantic/SQLAlchemy。先运行不需要任何 Key 的 Mock，再按 S1~S7 完成业务和授权接入。
 
-**当前为 S3**：已完成工程分层、招聘CRUD与权限、AI提取/人工审核，以及异步投影、持久Mock智能表格、指数退避/死信/管理员重试。真实DeepSeek及腾讯文档没有凭证联调；腾讯写入适配器在缺凭证/缺实测Schema时明确阻断。仅用于虚构资料与本机演示，生产/live模式拒绝启动。
+**当前为 S4**：七个业务页面、数据库看板/筛选/待办/详情历史、独立Offer发出/接受/拒绝记录、移动端审核与权限路由已实现。按要求加入24条虚构申请、23位候选人和4个演示岗位，支持幂等重跑；图表读取数据库，不使用硬编码业务指标。真实DeepSeek/MCP/企微尚未联调，生产/live模式仍拒绝启动。
 
 ## 工作区
 
@@ -19,7 +19,7 @@
 
 ## 安装（仓库根目录）
 
-需要 Python **3.11+**（本次验证 3.12）、Node.js **22.12+** 和 npm 10+。Python 3.10 不支持。已有 `.venv` 时可跳过环境创建。本工作区已准备独立 Python 3.12 和后端虚拟环境；这些本地工具不纳入 Git。
+需要 Python **3.11+**（本次验证 3.12）、Node.js **22.13+（22.x）或24.x/26+** 和 npm 10+。本次实测Node24.14；前端测试依赖要求上述Node版本，22.12不满足jsdom要求。Python 3.10不支持。已有`.venv`可跳过创建，本地工具不纳入Git。
 
 Windows PowerShell（已安装 Python 3.12 的新环境）：
 
@@ -29,6 +29,8 @@ backend/.venv/Scripts/python.exe -m pip install --require-hashes -r backend/requ
 Copy-Item backend/.env.example backend/.env
 npm ci
 npm run db:upgrade
+# 可选：生成明确标记的虚构样本，不覆盖已有记录
+npm run demo:seed
 ```
 
 Linux/macOS：
@@ -39,6 +41,8 @@ backend/.venv/bin/python -m pip install --require-hashes -r backend/requirements
 cp backend/.env.example backend/.env
 npm ci
 npm run db:upgrade
+# optional synthetic demo data
+npm run demo:seed
 ```
 
 `.env` 已存在时保留自己的文件，不覆盖。Mock 无需填写任何三方凭证。Python `requirements.lock` 包含开发依赖、精确版本、跨平台标记与哈希；Windows 已实测，Linux/macOS 尚未实机验收。npm 统一使用根目录 `package-lock.json`，不要在 frontend 另建锁文件。
@@ -58,13 +62,14 @@ npm run dev:web
 
 ## 演示与检查
 
-1. 顶部默认“模拟管理员”；候选人记录新增虚构姓名、岗位、编号 `A10001`。
-2. 列表人工推进至“简历筛选”、再推进至“一面”。AI消息录入输入 `A10001 一面通过`，进入二面、版本递增。S1严格校验状态机，不能从新申请直接跳二面。
-3. 返回工作台刷新：阶段分布和数量来自数据库；空库显示空态。
+1. 顶部默认“模拟管理员”。运行demo:seed后，在候选人与申请搜索`DEMO_S4`，或来源渠道填写`演示样本`再查询。新空库不自动塞样本；也可先在系统设置创建岗位，再新增申请。
+2. 点申请编号进入详情，可人工更新阶段（说明必填）、安排面试、记录反馈。已有候选人投递其他岗位时，在新增申请选择“已有候选人”；同名不会自动合并。
+3. AI录入支持编号的一面通过、二面安排；姓名或时间歧义进入审核，抽屉按意图展示必要字段。工作台近30天默认按上海申请创建日期查询，可选岗位/负责人/阶段；当前阶段分布不当作历史转化率。
 4. 后台每2秒扫描outbox；同步中心自动刷新实际状态，可请求立即处理：显示 `MOCK-` ID，同一申请更新复用映射，**不会写入腾讯文档**。只有申请投影到模拟表，其它事件标记“内部事件（不投影）”。
 5. 顶部可切换模拟HR/负责人：HR仅查看本人，负责人只读所属部门，同步中心仅管理员可访问；后端同样执行限制。HR新增申请须使用已配置的岗位。
 6. 输入姓名更新或模糊时间会进入“待人工确认”；点击审核，可选择申请、确认原提议、修正字段后执行或驳回。审核说明必填，过期申请版本409，任务只处理一次。
-7. 在二面阶段输入`A10001 安排二面 明天15:00 面试官虚构王`，结果与计划分别记录；“一面通过”不代表“二面通过”。未提供原计划的结果记录不会补造时间/面试官。
+7. Offer阶段在详情登记已经发出的事实，再登记接受或拒绝；不会真的发送Offer。接受不等于录用、拒绝不自动淘汰；需授权人员另行登记录用。接受率=接受/(接受+拒绝)，无反馈时显示暂无明确反馈。
+8. 面试与待办来自未来计划、已过时点待反馈、待审核、超过7天未更新及最新申请投影故障；点击定位原记录。参考时间按类别解释，不冒充已发送提醒。
 
 ```bash
 npm run check             # 契约漂移 + lint + Python/TS类型 + pytest + build
@@ -73,9 +78,12 @@ npm run contracts:generate # 修改schema/路由后重新生成OpenAPI和TS
 npm run contracts:check
 npm run db:check           # 模型与迁移漂移检查
 npm run integrations:tencent:discover # 只读工具发现；缺Token退出2，不会调用业务工具
+npm run smoke:workbench   # 服务启动、demo:seed后验证Offer/看板/权限，保留1条虚构申请
+npm run test:api          # pytest
+npm run test:web          # Vitest组件/路由/错误/日期测试
 ```
 
-后端单独检查：进入 `backend`，激活 `.venv` 后运行 `python -m pytest -q`、`python -m compileall -q app`。前端可单独运行 `npm run typecheck --workspace frontend` 和 `npm run build --workspace frontend`。S4 再补组件测试，不以空脚本冒充测试通过。
+后端单独检查：进入`backend`并激活`.venv`后运行`python -m pytest -q`、`python -m compileall -q app`。前端单独运行`npm run typecheck --workspace frontend`、`npm run test:web`和`npm run build --workspace frontend`。根npm test运行后端及前端两套真实测试。
 
 ## 字段扩展
 
@@ -92,7 +100,11 @@ Unix改用`.venv/bin/python`。命令保留原库和备份，目标文件必须�
 
 ## 当前验证边界
 
-S3回归覆盖异步领取、退避/死信、远端成功但本地确认丢失、版本防回退、权限与幂等重试，数量见实施报告。HTTP冒烟包含新增/结果/安排/驳回/自动后台同步；浏览器验证了审核和同步中心重试。完整页面、多尺寸UI与组件验收在S4。PostgreSQL仅DDL离线编译；保留上游测试客户端兼容警告及前端大包警告，拆包在S4。
+S4后端132项、前端12项回归通过；HTTP包括AI全链路及独立Offer/人工录用、筛选、历史和权限。浏览器检查七页、1440/1024/390px布局，并实际完成390px姓名消息审核、Offer反馈、跨部门403及负责人只读。生产构建预览的3个图表实际渲染，控制台无错误；不将此当成真实生产身份/第三方验收。PostgreSQL仅DDL离线编译，Linux/macOS未实机运行；保留1条测试客户端警告和535KB主分包警告。
+
+S4新增0004_s4迁移，仅增加offers表，旧申请的Offer状态保持未知。现有S3库停止后端、备份数据库后执行npm run db:upgrade；当前工作区已升级。前端按路由和图表模块加载，框架/图表引擎/渲染器独立分包；不通过提高阈值隐藏构建警告。
+
+demo:seed仅允许development+mock且SmartSheet为mock。样本编号DEMO_S4_01~24、来源“演示样本”、组织备注“S4虚构演示”；包含同名、一人多岗和历史日期/过去面试，用于趋势与待反馈演示，公共API仍拒绝安排过去面试。重复执行保留已存在样本及人工修改，不覆盖、清库或重置；遇到非演示记录占用样本编号会拒绝。S4联调也会留下明确命名的虚构记录。
 
 S2迁移为0002_s2，现有S1库运行`npm run db:upgrade`即可；启动自动读取Alembic当前head，新增迁移不需手改版本常量。结果记录允许没有原始面试计划；降级时若存在这些记录会明确拒绝，不删除记录或编造时间。
 

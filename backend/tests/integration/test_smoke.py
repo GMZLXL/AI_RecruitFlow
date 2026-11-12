@@ -31,12 +31,11 @@ def test_full_mock_flow(client):
     assert response["application"]["version"] == 4
     assert client.post("/api/v1/ingestions", json=message).json()["data"]["status"] == "duplicate"
     assert counts() == (1, 1, 4, 9, 9)
-    assert client.get("/api/v1/dashboard/overview").json()["data"] == {
-        "new_applications": 1,
-        "by_stage": {"interview_2": 1},
-        "pending_sync": 9,
-        "mode": "mock",
-    }
+    overview = client.get("/api/v1/dashboard/overview").json()["data"]
+    assert overview["new_applications"] == overview["candidates"] == 1
+    assert overview["by_stage"] == {"interview_2": 1}
+    assert overview["pending_sync"] == 4  # Application projections, excluding internal events.
+    assert overview["mode"] == "mock"
     sync = client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"]
     assert sync["accepted"] is True
     assert asyncio.run(process_batch()) == 9

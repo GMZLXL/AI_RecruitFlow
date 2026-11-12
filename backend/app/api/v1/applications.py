@@ -10,10 +10,10 @@ from app import schemas as s
 from app import services as svc
 from app.db import (
     Application,
-    Candidate,
     Event,
 )
 from app.domain import Stage
+from app.services.workbench import filtered_applications
 
 from .common import DB, Actor, Key, Page, PageSize, Version, envelope, listing
 
@@ -37,25 +37,10 @@ def applications(
     to: AwareDatetime | None = None,
     sort: Literal["created_desc", "updated_desc", "code_asc"] = "created_desc",
 ):
-    query = select(Application).where(svc.visibility(Application, actor))
-    if keyword:
-        query = query.where(
-            Application.application_code.contains(keyword, autoescape=True)
-            | Application.candidate.has(Candidate.display_name.contains(keyword, autoescape=True))
-        )
-    for column, value in (
-        (Application.stage, stage),
-        (Application.candidate_id, candidate_id),
-        (Application.position_id, position_id),
-        (Application.owner_id, owner_id),
-        (Application.source_channel, source_channel),
-    ):
-        if value is not None:
-            query = query.where(column == value)
-    if from_at is not None:
-        query = query.where(Application.created_at >= from_at)
-    if to is not None:
-        query = query.where(Application.created_at < to)
+    query = filtered_applications(actor, keyword=keyword, position_id=position_id, owner_id=owner_id,
+                                  stage=stage, source_channel=source_channel, from_at=from_at, to=to)
+    if candidate_id:
+        query = query.where(Application.candidate_id == candidate_id)
     order = {
         "created_desc": Application.created_at.desc(),
         "updated_desc": Application.updated_at.desc(),
