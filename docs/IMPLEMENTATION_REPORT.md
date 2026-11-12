@@ -1,5 +1,37 @@
 # AI RecruitFlow 实施报告
 
+## S1 实际交付（2026-11-12）
+
+```text
+阶段：S1
+已完成：十二类领域模型+幂等记录表；UUID/UTC/SQLite外键；Alembic；业务CRUD/筛选/分页/软删除；开发RBAC；状态机与版本冲突；事务审计/outbox；基础前端身份及阶段操作。
+本阶段变更文件：见下方S1清单，契约和生成前端类型已同步。
+数据库迁移：0001_s1；空库upgrade/check/downgrade/再upgrade通过；旧S0库已复制为recruitflow_s1.db并保留原库和备份；PostgreSQL迁移DDL离线编译通过。
+运行的命令：npm run check；npm run db:check；npm run smoke:http；python -m compileall -q app alembic；scripts/upgrade_s0.py。
+测试结果：46通过、0失败、0跳过；Pyright/TypeScript、Ruff/ESLint、契约漂移检查、Vite build及真实本机HTTP冒烟通过。
+未完成/阻塞：无S1凭证阻塞；完整AI确认处理属S2；生产身份、真实PostgreSQL/外部系统尚未联调；成品界面与多尺寸验收属S4。
+重要风险：仅本机模拟用户，禁止生产使用；旧记录归属模拟管理员；保留1条Starlette测试客户端兼容弃用警告；前端主包约2.30MB待S4拆包。
+下一阶段：S2（Parser、DeepSeek配置/校验、匹配与人工确认闭环）。本轮未进入S2。
+```
+
+Git：已初始化本地main分支，S0基线提交`b137928`；本轮完成S1后保存独立提交。没有配置或推送远程。`.env`、数据库、备份、依赖/工具目录均已通过git check-ignore验证。
+
+统一结构：Candidate与Position独立，ApplicationCreate支持ID引用/便捷名称互斥分支，一人可多岗位；读投影保持application_code/candidate_name/position_title，新增owner/source/outcome/custom_fields。扩展字段当前按白名单接受organization.referral_tag字符串，禁止任意JSON或权限字段注入。
+
+权限：服务端固定虚构目录解析X-Dev-User；HR本人、经理本部门只读、管理员全局。未知/停用用户401；角色自报不提升权限；生产环境与live模式拒绝启动。联系方式没有采集或返回入口。
+
+写入：Idempotency-Key按用户/操作隔离并保存请求哈希与响应；修改/删除要求If-Match；数据库条件更新使两次并发写入一成功一409。业务修改与审计/outbox同事务；注入审计或outbox失败均全回滚。候选人/岗位改名与面试修改递增相关申请投影版本。终态逆转只创建确认任务，原申请版本/状态保持，执行审核留S2。
+
+迁移：启动不再create_all。迁移`0001_s1`包含全部目标表、约束和索引；空库测试通过Alembic check。S0升级命令只读原库、创建备份和新目标库；ID/关联/事件/审计/模拟映射保留，过期未同步历史版本标记superseded。实际原库recruitflow.db保留，备份recruitflow.db.backup-958f00df.db保留，当前本地.env指向recruitflow_s1.db。失败时不会覆盖原库；目标已有文件则拒绝。旧无source前缀事件按manual迁移，原数据没有实际负责人信息，统一归属模拟管理员。
+
+本轮46项测试包含原S0全部测试意图（随严格状态机与接入记录更新断言），另验证一人多岗位、同名不合并、越权/经理范围、停用/关闭开发身份、幂等重放、并发409、确认持久化、关联删除限制、修改投影、扩展白名单、面试独立结果、时区/时间边界、SQLite外键、事务失败、空库/旧库迁移以及PostgreSQL离线DDL。期间发现新建面试首次响应未转UTC，已通过刷新持久化对象修复，回归通过。
+
+实际结果：`npm run check`退出0；pytest **46 passed, 1 warning in 7.53s**；Vite **built in 15.39s**；`npm run db:check`为**No new upgrade operations detected**；`npm run smoke:http`为**PASS: web 5173 + Vite proxy + API 8000 + create/update/dedupe/dashboard/mock sync**。生成路径19个；主JS2,298KB、gzip754KB。未执行真实PostgreSQL连接、Linux/macOS启动或任何真实第三方写入，不将DDL编译视为真实数据库联调。
+
+S1文件：`app/db.py`、`domain.py`、`schemas.py`、`security.py`、`errors.py`、`services.py`、`main.py`；`alembic.ini`及`alembic/`；`scripts/upgrade_s0.py`和HTTP冒烟；`tests/conftest.py`、保留的`test_smoke.py`、新增`test_s1.py`/`test_migrations.py`/`test_concurrency.py`；依赖源/哈希锁和.env示例；前端API/App/CSS/生成类型；根package/pyright配置；OpenAPI和README、docs/04/05/09/13、S1计划及状态报告。
+
+以下为S0及补验历史记录，当前状态以上述S1交付为准。
+
 ## S0 补验（2026-11-12）
 
 本轮已实际通过内置浏览器打开5173页面，验证看板真实数据、创建`AS0UI20261112`虚构申请、AI输入该编号一面通过、结果进入二面、执行模拟同步。两个申请版本复用`MOCK-18695a03`映射，页面明确标注模拟。此前浏览器工具阻塞本次已解除，S0基础浏览器验收已补齐；完整多尺寸产品验收仍属于S4。已初始化本地main分支，保存S0基线后进入S1。下文保留上一轮原始执行记录。

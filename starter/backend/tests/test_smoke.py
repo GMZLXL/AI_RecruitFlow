@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from app.main import app
 def create(client, code="A10001"):
     return client.post(
         "/api/v1/applications",
+        headers={"Idempotency-Key": uuid.uuid4().hex},
         json={
             "candidate_name": "虚构候选甲",
             "position_title": "数据分析师",
@@ -23,10 +25,26 @@ def create(client, code="A10001"):
     )
 
 
+def advance(client, application, headers=None):
+    for stage in ("screening", "interview_1"):
+        response = client.patch(
+            f"/api/v1/applications/{application['id']}",
+            json={"stage": stage, "change_reason": "虚构样本面试准备"},
+            headers={
+                **(headers or {}),
+                "Idempotency-Key": uuid.uuid4().hex,
+                "If-Match": str(application["version"]),
+            },
+        )
+        assert response.status_code == 200, response.text
+        application = response.json()["data"]["application"]
+    return application
+
+
 def counts():
     with SessionLocal() as db:
         return tuple(
-            db.scalar(select(func.count(model.id)))
+            db.scalar(select(func.count(model.id))) or 0
             for model in (Candidate, Application, Event, AuditLog, Outbox)
         )
 
@@ -38,25 +56,31 @@ def test_full_mock_flow(client):
     created = create(client)
     assert created.status_code == 201
     assert created.json()["data"]["stage"] == "applied"
+    advance(client, created.json()["data"])
     message = {"text": "A10001 一面通过", "external_event_id": "msg001"}
     response = client.post("/api/v1/ingestions", json=message).json()["data"]
     assert response["status"] == "applied"
     assert response["application"]["stage"] == "interview_2"
-    assert response["application"]["version"] == 2
+    assert response["application"]["version"] == 4
     assert client.post("/api/v1/ingestions", json=message).json()["data"]["status"] == "duplicate"
-    assert counts() == (1, 1, 2, 2, 2)
+    assert counts() == (1, 1, 4, 7, 7)
     assert client.get("/api/v1/dashboard/overview").json()["data"] == {
         "new_applications": 1,
         "by_stage": {"interview_2": 1},
-        "pending_sync": 2,
+        "pending_sync": 7,
         "mode": "mock",
     }
-    sync = client.post("/api/v1/sync/run").json()["data"]
-    assert sync["processed"] == 2 and sync["mode"] == "mock"
+    sync = client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"]
+    assert sync["processed"] == 7 and sync["mode"] == "mock"
     jobs = client.get("/api/v1/sync/jobs").json()["data"]
     assert all(j["status"] == "mock_synced" for j in jobs)
-    assert len({j["remote_record_id"] for j in jobs}) == 1
-    assert client.post("/api/v1/sync/run").json()["data"]["processed"] == 0
+    assert len({j["remote_record_id"] for j in jobs if j["entity_type"] == "applications"}) == 1
+    assert (
+        client.post("/api/v1/sync/run", headers={"Idempotency-Key": uuid.uuid4().hex}).json()["data"][
+            "processed"
+        ]
+        == 0
+    )
     assert client.get("/api/v1/dashboard/overview").json()["data"]["pending_sync"] == 0
 
 
@@ -68,13 +92,17 @@ def test_ambiguous_never_autowrites(client, text):
     before = counts()
     response = client.post("/api/v1/ingestions", json={"text": text}).json()
     assert response["data"]["status"] == "needs_confirmation"
-    assert counts() == before
+    assert counts()[:3] == before[:3]
+    assert counts()[3:] == tuple(
+        value + 1 for value in before[3:]
+    )  # received job is audited, application is untouched
 
 
 def test_ai_create_generated_code_can_be_updated(client):
     body = {"text": "新增虚构乙应聘数据分析岗", "external_event_id": "create-001"}
     created = client.post("/api/v1/ingestions", json=body).json()["data"]
     code = created["application"]["application_code"]
+    advance(client, created["application"])
     result = client.post("/api/v1/ingestions", json={"text": f"{code} 一面通过"}).json()["data"]
     assert result["application"]["id"] == created["application"]["id"]
     assert client.post("/api/v1/ingestions", json=body).json()["data"]["status"] == "duplicate"
@@ -84,7 +112,7 @@ def test_sources_have_separate_idempotency_scopes(client):
     for source in ("manual", "wecom_mock"):
         result = client.post(
             "/api/v1/ingestions",
-            json={"text": "新增虚构丙应聘测试岗", "external_event_id": "same-id", "source": source},
+            json={"text": f"新增虚构{source}应聘测试岗", "external_event_id": "same-id", "source": source},
         )
         assert result.json()["data"]["status"] == "applied"
     assert counts()[1] == 2
@@ -96,15 +124,20 @@ def test_create_idempotency_conflict_and_duplicate_code(client):
     first = client.post("/api/v1/applications", json=body, headers=headers)
     repeated = client.post("/api/v1/applications", json=body, headers=headers)
     assert first.json()["data"]["id"] == repeated.json()["data"]["id"]
-    assert counts() == (1, 1, 1, 1, 1)
+    assert counts() == (1, 1, 1, 3, 3)
     assert (
         client.post(
             "/api/v1/applications", json={**body, "candidate_name": "另一人"}, headers=headers
         ).status_code
         == 409
     )
-    assert client.post("/api/v1/applications", json=body).status_code == 409
-    assert counts() == (1, 1, 1, 1, 1)
+    assert (
+        client.post(
+            "/api/v1/applications", json=body, headers={"Idempotency-Key": uuid.uuid4().hex}
+        ).status_code
+        == 409
+    )
+    assert counts() == (1, 1, 1, 3, 3)
 
 
 @pytest.mark.parametrize(
@@ -156,7 +189,7 @@ def test_terminal_and_backward_updates_require_confirmation(client):
         before = counts()
         response = client.post("/api/v1/ingestions", json={"text": "A10001 一面通过"})
         assert response.json()["data"]["status"] == "needs_confirmation"
-        assert counts() == before
+        assert counts()[:3] == before[:3]
 
 
 def test_audit_failure_rolls_back_entire_business_transaction(client):
@@ -203,10 +236,10 @@ def test_unsafe_modes_refuse_startup(env):
         [sys.executable, "-c", "import app.main"], capture_output=True, text=True, env={**os.environ, **env}
     )
     assert result.returncode != 0
-    assert "S0 only supports" in result.stderr
+    assert "S1 only supports" in result.stderr
 
 
 def test_openapi_is_the_implemented_contract(client):
     path = Path(__file__).resolve().parents[3] / "contracts" / "openapi.yaml"
     assert yaml.safe_load(path.read_text(encoding="utf-8")) == client.get("/openapi.json").json()
-    assert "/api/v1/confirmations" not in app.openapi()["paths"]
+    assert "/api/v1/confirmations/{confirmation_id}/resolve" not in app.openapi()["paths"]

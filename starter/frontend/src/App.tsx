@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Col, Form, Input, Layout, Menu, Row, Space, Statistic, Table, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Col, Form, Input, Layout, Menu, Row, Select, Space, Spin, Statistic, Table, Tag, Typography, message } from 'antd';
 import ReactECharts from 'echarts-for-react';
-import { api, errorMessage, type Application, type ApplicationCreate, type DashboardData, type IngestResult, type Stage, type SyncJob } from './api';
+import { api, errorMessage, type Application, type ApplicationCreate, type DashboardData, type IngestResult, type Stage, type SyncJob, type User } from './api';
 const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const STAGES: Record<Stage, string> = { applied: '新申请', screening: '简历筛选', interview_1: '一面', interview_2: '二面', offer: 'Offer阶段', hired: '录用', rejected: '淘汰/结束', withdrawn: '主动退出' };
 const stageLabel = (stage: string) => STAGES[stage as Stage] ?? stage;
 const formatTime = (value: string) => new Date(value).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+const NEXT_STAGE: Partial<Record<Stage, Stage>> = { applied: 'screening', screening: 'interview_1', interview_1: 'interview_2', interview_2: 'offer' };
 
 function PageHead({ title, desc }: {title: string; desc?: string}) {
   return <div className="page-head"><Title level={3} style={{ margin: 0 }}>{title}</Title>{desc && <Text type="secondary">{desc}</Text>}</div>;
@@ -38,7 +39,7 @@ function Dashboard() {
   </>;
 }
 
-function Candidates() {
+function Candidates({ canWrite }: { canWrite: boolean }) {
   const [rows, setRows] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,21 +54,30 @@ function Candidates() {
     catch (error) { message.error(errorMessage(error, '新增失败，请检查后端运行状态')); }
     finally { setSaving(false); }
   };
+  const advance = async (row: Application) => {
+    const target = NEXT_STAGE[row.stage];
+    if (!target) return;
+    setSaving(true);
+    try { await api.advance(row, target); await refresh(); message.success('阶段已更新并写入审计，等待模拟同步'); }
+    catch (error) { message.error(errorMessage(error, '阶段更新失败，请刷新后重试')); }
+    finally { setSaving(false); }
+  };
   return <>
-    <PageHead title="候选人记录" desc="这是申请维度的数据列表；同一候选人可有多个岗位申请（完整版由 Codex 实现）。" />
-    <Card title="新增演示记录">
+    <PageHead title="候选人记录" desc="申请按后端授权范围显示。HR新增时须使用已配置的岗位名称；同一候选人多岗申请可通过ID接口创建。" />
+    {canWrite && <Card title="新增演示记录">
       <Form form={form} layout="inline" onFinish={(v) => void submit(v)}>
         <Form.Item name="candidate_name" label="候选人" rules={[{required:true,whitespace:true,message:'请填写姓名'}]}><Input maxLength={100} placeholder="虚构候选人" /></Form.Item>
         <Form.Item name="position_title" label="岗位" rules={[{required:true,whitespace:true,message:'请填写岗位'}]}><Input maxLength={120} placeholder="数据分析岗" /></Form.Item>
         <Form.Item name="application_code" label="申请编号"><Input maxLength={40} placeholder="如 A10001（选填）" /></Form.Item>
         <Form.Item><Button type="primary" htmlType="submit" loading={saving}>新增</Button></Form.Item>
       </Form>
-    </Card>
+    </Card>}
     <Card className="section-card" title="招聘申请" extra={<Button onClick={() => void refresh()}>刷新</Button>}>
       <Table loading={loading} rowKey="id" dataSource={rows} pagination={{current:page,pageSize:8,total,showSizeChanger:false,onChange:setPage}} scroll={{x:720}} columns={[
         {title:'申请编号',dataIndex:'application_code',width:140}, {title:'候选人',dataIndex:'candidate_name',width:120},
         {title:'岗位',dataIndex:'position_title',width:170}, {title:'当前阶段',dataIndex:'stage',render:(s:Stage)=><Tag color="blue">{STAGES[s]}</Tag>},
-        {title:'版本',dataIndex:'version',width:70}, {title:'更新时间（上海）',dataIndex:'updated_at',render:formatTime,width:190}
+        {title:'版本',dataIndex:'version',width:70}, {title:'更新时间（上海）',dataIndex:'updated_at',render:formatTime,width:190},
+        {title:'人工推进',key:'advance',width:150,render:(_:unknown,row:Application)=>canWrite && NEXT_STAGE[row.stage] ? <Button size="small" loading={saving} onClick={()=>void advance(row)}>推进至{STAGES[NEXT_STAGE[row.stage]!]}</Button> : '—'}
       ]} />
     </Card>
   </>;
@@ -84,7 +94,7 @@ function AIInbox() {
     finally { setBusy(false); }
   };
   return <>
-    <PageHead title="AI 消息录入" desc="演示支持：新增张三应聘数据分析岗；或先创建 A10001 后发送 A10001 一面通过。" />
+    <PageHead title="AI 消息录入" desc="支持明确新增；阶段更新须先人工推进到一面，再输入申请编号 + 一面通过。完整Parser与审核在S2实施。" />
     <Row gutter={[16,16]}>
       <Col xs={24} lg={13}><Card title="粘贴招聘业务消息"><Input.TextArea rows={7} maxLength={2000} showCount placeholder="例如：新增张三应聘数据分析岗" value={text} onChange={e=>setText(e.target.value)} /><Button block type="primary" loading={busy} disabled={!text.trim()} style={{marginTop:22}} onClick={() => void submit()}>解析并处理</Button></Card></Col>
       <Col xs={24} lg={11}><Card title="AI 处理结果" style={{minHeight:285}}>{!result ? <Text type="secondary">提交后在此展示系统处理状态。</Text> : <>
@@ -122,25 +132,30 @@ function Placeholder({ title }: {title:string}) { return <><PageHead title={titl
 
 function Shell() {
   const loc = useLocation(); const nav = useNavigate();
+  const [identity, setIdentity] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [authError, setAuthError] = useState('');
+  useEffect(() => { void Promise.all([api.me(), api.devUsers()]).then(([me, options]) => { setIdentity(me.user); setUsers(options); }).catch(error => setAuthError(errorMessage(error, '无法读取开发身份，请启动后端并完成迁移'))); }, []);
+  const canWrite = identity?.role === 'HR' || identity?.role === 'ADMIN';
   const items = [
     {key:'/dashboard',label:'招聘工作台'}, {key:'/candidates',label:'候选人记录'},
     {key:'/ai-inbox',label:'AI消息录入'}, {key:'/tasks',label:'待办提醒'},
     {key:'/sync',label:'同步中心'}, {key:'/settings',label:'系统设置'},
-  ];
+  ].filter(item => identity?.role === 'ADMIN' || item.key !== '/sync');
   return <Layout className="app-shell">
     <Sider theme="light" width={218} breakpoint="lg" collapsedWidth={0}>
       <div className="brand">AI <strong>RecruitFlow</strong><small>招聘运营智能助手</small></div>
       <Menu mode="inline" selectedKeys={[loc.pathname]} items={items} onClick={({key})=>nav(key)} />
     </Sider>
     <Layout>
-      <Header className="topbar"><Space><Text strong>AI 招聘自动化</Text><Tag color="gold">MOCK · 开发模拟身份</Tag></Space><Text type="secondary"><Link to="/settings">连接设置</Link></Text></Header>
-      <Content className="app-content"><Routes>
+      <Header className="topbar"><Space wrap><Text strong>AI 招聘自动化</Text><Tag color="gold">MOCK · 开发模拟身份</Tag><Select aria-label="开发模拟身份" value={identity?.id} options={users.map(user=>({value:user.id,label:`${user.display_name} · ${user.role}`}))} style={{width:205}} onChange={api.selectDevUser} /></Space><Text type="secondary"><Link to="/settings">连接设置</Link></Text></Header>
+      <Content className="app-content">{authError ? <Alert type="error" message={authError} action={<Button onClick={()=>{sessionStorage.removeItem('recruitflow.dev_user');window.location.reload();}}>恢复默认开发身份</Button>} /> : !identity ? <Spin tip="读取开发身份"><div style={{minHeight:200}} /></Spin> : <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} /><Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/candidates" element={<Candidates />} /><Route path="/ai-inbox" element={<AIInbox />} />
+        <Route path="/candidates" element={<Candidates canWrite={canWrite} />} /><Route path="/ai-inbox" element={canWrite ? <AIInbox /> : <Alert type="warning" message="当前负责人身份仅有查看权限" />} />
         <Route path="/tasks" element={<Placeholder title="待办提醒" />} />
-        <Route path="/sync" element={<SyncCenter />} /><Route path="/settings" element={<Placeholder title="系统设置" />} />
+        <Route path="/sync" element={identity.role === 'ADMIN' ? <SyncCenter /> : <Alert type="warning" message="仅管理员可以访问同步中心" />} /><Route path="/settings" element={<Placeholder title="系统设置" />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes></Content>
+      </Routes>}</Content>
     </Layout>
   </Layout>;
 }

@@ -1,5 +1,5 @@
 {
-  "include": ["starter/backend/app", "starter/backend/tests", "starter/backend/scripts"],
+  "include": ["starter/backend/app", "starter/backend/tests", "starter/backend/scripts", "starter/backend/alembic"],
   "venvPath": "starter/backend",
   "venv": ".venv",
   "pythonVersion": "3.12",

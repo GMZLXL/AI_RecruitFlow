@@ -9,4 +9,5 @@ body { margin: 0; }
 .page-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
 .section-card { margin-top: 20px; }
 .ant-table-wrapper { margin-top: 10px; }
+.topbar { min-height:65px; height:auto; line-height:normal; padding-top:12px; padding-bottom:12px; gap:8px; flex-wrap:wrap; }
 @media (max-width: 600px) { .app-content {padding: 14px;} .topbar {padding: 0 10px;} .brand {padding: 18px;} .ant-form-inline {gap:8px;} .ant-form-inline .ant-form-item {width:100%;} }

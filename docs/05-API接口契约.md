@@ -1,6 +1,34 @@
 # 05｜REST API 接口契约（v1）
 
-## S0 当前已实现契约（优先于下方目标示例）
+## S1 当前已实现契约
+
+运行契约由Pydantic生成，共19个实际路径。以下内容优先于S0历史说明和后续目标示例。
+
+- `/health`公开；`/ready`需开发身份并检查数据库；`/me`返回身份，`/dev/users`只列服务端虚构用户，均加`/api/v1`前缀。
+- `GET/POST /positions`、`GET/PATCH/DELETE /positions/{id}`；新增/修改/删除仅管理员，查询按部门范围。
+- `GET/POST /candidates`、`GET/PATCH/DELETE /candidates/{id}`；候选人独立于申请，不返回联系方式。创建可给owner_id，但HR只能指定自己。
+- `GET/POST /applications`、`GET/PATCH/DELETE /applications/{id}`、`GET /applications/{id}/events`。
+- `GET/POST /applications/{id}/interviews`、`GET/PATCH/DELETE /interviews/{id}`。创建面试If-Match是申请版本；修改/删除使用面试版本，父申请也递增版本。面试结果与阶段独立。
+- `GET /confirmations`列出持久化任务；本阶段尚无resolve接口。
+- 保留`POST /ingestions`、`GET /dashboard/overview`、`GET /sync/jobs`、`POST /sync/run`、`GET /integrations/status`；同步及集成状态仅管理员。当前仍是Mock，非真实外部写入。
+
+所有列表page/page_size（默认20、最大100）。申请筛选keyword/candidate_id/position_id/owner_id/stage/source_channel/from/to，时间为带时区ISO8601且区间[from,to)；sort仅created_desc/updated_desc/code_asc。候选人支持keyword/owner_id；岗位支持keyword/active。
+
+业务POST/PATCH/DELETE必须Idempotency-Key（1~150字符），缺失400；PATCH/DELETE必须If-Match正整数，缺失422、版本冲突409。同键同内容重放原响应，不同内容409；键按用户+操作隔离。ingestions按source+external_event_id去重，缺事件ID生成新事件；同ID不同消息409，不能重放其他用户事件。
+
+申请创建每一类引用必须二选一：candidate_id或candidate_name、position_id或position_title。推荐ID关联同一候选人的多岗位申请；便捷姓名分支显式创建新候选人，不自动合并同名。HR仅可选择可见且部门匹配的现有岗位；管理员可在便捷分支创建岗位。同名岗位不唯一409要求使用ID。
+
+```json
+{"candidate_id":"已创建的候选人UUID","position_id":"已创建的岗位UUID","application_code":"A10001","source_channel":"referral","custom_fields":{"organization.referral_tag":"内推"}}
+```
+
+PATCH申请体为`stage?/source_channel?/custom_fields?/change_reason`，返回`data:{status,application,confirmation_id?,reason?}`。正常status=applied；终态逆转status=needs_confirmation且原状态/版本不变。普通跳阶段409。DELETE要求JSON体`{"change_reason":"..."}`并软删除；关联活跃申请的候选人/岗位不能删除。创建/修改任意未知字段422。
+
+开发身份只在development+mock+DEV_AUTH_ENABLED=true生效，Header为X-Dev-User（UUID或服务端别名）。HR只操作本人；经理只读所属部门；管理员管理全局。生产入口拒绝启动，不采用浏览器自报role。未知/停用用户401，越权403。
+
+错误码包括UNAUTHENTICATED/FORBIDDEN/NOT_FOUND/VERSION_CONFLICT/IDEMPOTENCY_CONFLICT/IDEMPOTENCY_KEY_REQUIRED/CONSTRAINT_CONFLICT/INVALID_STAGE_TRANSITION/INVALID_INPUT，保持统一error/request_id且不回显原始输入。
+
+## S0 历史契约（已由S1更新）
 
 `app/schemas.py -> contracts/openapi.yaml -> src/types/api.generated.ts`，通过根目录 `npm run contracts:generate` 生成，`npm run contracts:check` 检测漂移。详见 [统一数据契约与扩展规范](13-统一数据契约与扩展规范.md)。OpenAPI 仅导出当前实际路由；下方完整 API 列表为 S1~S7 目标，不代表已实现。
 

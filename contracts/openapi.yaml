@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: AI RecruitFlow Mock API
-  description: S0 local Mock baseline. No real DeepSeek/Tencent Docs/WeCom connections.
-  version: 0.1.0
+  description: S1 domain, migration and development RBAC. No real external connections.
+  version: 0.2.0
 paths:
   /api/v1/health:
     get:
@@ -21,6 +21,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
           description: Forbidden
           content:
@@ -51,10 +57,205 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/ready:
+    get:
+      summary: Ready
+      operationId: ready_api_v1_ready_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_Health_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/me:
+    get:
+      summary: Me
+      operationId: me_api_v1_me_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_Identity_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/dev/users:
+    get:
+      summary: Development Users
+      operationId: development_users_api_v1_dev_users_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_list_UserRead__'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/integrations/status:
     get:
       summary: Integration Status
       operationId: integration_status_api_v1_integrations_status_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       responses:
         '200':
           description: Successful Response
@@ -63,41 +264,895 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response_IntegrationStatus_'
         '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/positions:
+    get:
+      summary: Positions
+      operationId: positions_api_v1_positions_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Keyword
+      - name: active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Active
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_PositionRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Position Create
+      operationId: position_create_api_v1_positions_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_PositionRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/positions/{position_id}:
+    get:
+      summary: Position Detail
+      operationId: position_detail_api_v1_positions__position_id__get
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Position Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_PositionRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Position Patch
+      operationId: position_patch_api_v1_positions__position_id__patch
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Position Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_PositionRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    delete:
+      summary: Position Delete
+      operationId: position_delete_api_v1_positions__position_id__delete
+      parameters:
+      - name: position_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Position Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_DeleteResult_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/candidates:
+    get:
+      summary: Candidates
+      operationId: candidates_api_v1_candidates_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Keyword
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_CandidateRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Candidate Create
+      operationId: candidate_create_api_v1_candidates_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_CandidateRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/candidates/{candidate_id}:
+    get:
+      summary: Candidate Detail
+      operationId: candidate_detail_api_v1_candidates__candidate_id__get
+      parameters:
+      - name: candidate_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Candidate Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_CandidateRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Candidate Patch
+      operationId: candidate_patch_api_v1_candidates__candidate_id__patch
+      parameters:
+      - name: candidate_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Candidate Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidatePatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_CandidateRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    delete:
+      summary: Candidate Delete
+      operationId: candidate_delete_api_v1_candidates__candidate_id__delete
+      parameters:
+      - name: candidate_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Candidate Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_DeleteResult_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/applications:
     get:
       summary: Applications
@@ -120,6 +1175,92 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: keyword
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Keyword
+      - name: stage
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/Stage'
+          - type: 'null'
+          title: Stage
+      - name: candidate_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Candidate Id
+      - name: position_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Position Id
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Owner Id
+      - name: source_channel
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Channel
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: To
+      - name: sort
+        in: query
+        required: false
+        schema:
+          enum:
+          - created_desc
+          - updated_desc
+          - code_asc
+          type: string
+          default: created_desc
+          title: Sort
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       responses:
         '200':
           description: Successful Response
@@ -133,6 +1274,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
           content:
             application/json:
@@ -167,16 +1314,24 @@ paths:
       summary: Create Application
       operationId: create_application_api_v1_applications_post
       parameters:
-      - name: idempotency-key
+      - name: Idempotency-Key
         in: header
         required: false
         schema:
           anyOf:
           - type: string
             minLength: 1
-            maxLength: 120
+            maxLength: 150
           - type: 'null'
           title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       requestBody:
         required: true
         content:
@@ -196,6 +1351,856 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/applications/{application_id}:
+    get:
+      summary: Application Detail
+      operationId: application_detail_api_v1_applications__application_id__get
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_ApplicationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Application Patch
+      operationId: application_patch_api_v1_applications__application_id__patch
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_ApplicationMutation_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    delete:
+      summary: Application Delete
+      operationId: application_delete_api_v1_applications__application_id__delete
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_DeleteResult_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/applications/{application_id}/events:
+    get:
+      summary: Application Events
+      operationId: application_events_api_v1_applications__application_id__events_get
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_EventRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/applications/{application_id}/interviews:
+    get:
+      summary: Interviews
+      operationId: interviews_api_v1_applications__application_id__interviews_get
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_InterviewRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    post:
+      summary: Interview Create
+      operationId: interview_create_api_v1_applications__application_id__interviews_post
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Application Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_InterviewRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/interviews/{interview_id}:
+    get:
+      summary: Interview Detail
+      operationId: interview_detail_api_v1_interviews__interview_id__get
+      parameters:
+      - name: interview_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Interview Id
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_InterviewRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    patch:
+      summary: Interview Patch
+      operationId: interview_patch_api_v1_interviews__interview_id__patch
+      parameters:
+      - name: interview_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Interview Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_InterviewRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+    delete:
+      summary: Interview Delete
+      operationId: interview_delete_api_v1_interviews__interview_id__delete
+      parameters:
+      - name: interview_id
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          title: Interview Id
+      - name: If-Match
+        in: header
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: If-Match
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response_DeleteResult_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Conflict
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unprocessable Entity
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
+  /api/v1/confirmations:
+    get:
+      summary: Confirmations
+      operationId: confirmations_api_v1_confirmations_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListResponse_ConfirmationRead_'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
           content:
             application/json:
@@ -230,12 +2235,21 @@ paths:
     post:
       summary: Ingestion
       operationId: ingestion_api_v1_ingestions_post
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/IngestionRequest'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -244,45 +2258,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response_IngestionResult_'
         '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/dashboard/overview:
     get:
       summary: Dashboard
       operationId: dashboard_api_v1_dashboard_overview_get
+      parameters:
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       responses:
         '200':
           description: Successful Response
@@ -291,41 +2320,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response_DashboardData_'
         '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
   /api/v1/sync/jobs:
     get:
       summary: Sync Jobs
@@ -348,6 +2383,14 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       responses:
         '200':
           description: Successful Response
@@ -361,6 +2404,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
           content:
             application/json:
@@ -394,8 +2443,26 @@ paths:
   /api/v1/sync/run:
     post:
       summary: Run Mock Sync
-      description: Only local simulation. No network calls or real credentials.
       operationId: run_mock_sync_api_v1_sync_run_post
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 150
+          - type: 'null'
+          title: Idempotency-Key
+      - name: x-dev-user
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Dev-User
       responses:
         '200':
           description: Successful Response
@@ -404,41 +2471,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/Response_SyncRun_'
         '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Bad Request
+        '401':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
           description: Unprocessable Entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal Server Error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+          description: Internal Server Error
 components:
   schemas:
     ApiError:
@@ -461,15 +2534,31 @@ components:
       title: ApiError
     ApplicationCreate:
       properties:
+        candidate_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Candidate Id
+        position_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Position Id
         candidate_name:
-          type: string
-          maxLength: 100
-          minLength: 1
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
           title: Candidate Name
         position_title:
-          type: string
-          maxLength: 120
-          minLength: 1
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
           title: Position Title
         application_code:
           anyOf:
@@ -479,17 +2568,102 @@ components:
             pattern: ^[A-Z0-9_-]+$
           - type: 'null'
           title: Application Code
+        source_channel:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Source Channel
+        custom_fields:
+          additionalProperties:
+            type: string
+            maxLength: 120
+            minLength: 1
+          propertyNames:
+            const: organization.referral_tag
+          type: object
+          title: Custom Fields
+      additionalProperties: false
+      type: object
+      title: ApplicationCreate
+    ApplicationMutation:
+      properties:
+        status:
+          type: string
+          enum:
+          - applied
+          - needs_confirmation
+          title: Status
+        application:
+          $ref: '#/components/schemas/ApplicationRead'
+        confirmation_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Confirmation Id
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
       additionalProperties: false
       type: object
       required:
-      - candidate_name
-      - position_title
-      title: ApplicationCreate
+      - status
+      - application
+      title: ApplicationMutation
+    ApplicationPatch:
+      properties:
+        stage:
+          anyOf:
+          - $ref: '#/components/schemas/Stage'
+          - type: 'null'
+        source_channel:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Source Channel
+        custom_fields:
+          anyOf:
+          - additionalProperties:
+              type: string
+              maxLength: 120
+              minLength: 1
+            propertyNames:
+              const: organization.referral_tag
+            type: object
+          - type: 'null'
+          title: Custom Fields
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: ApplicationPatch
     ApplicationRead:
       properties:
         id:
           type: string
           title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
         application_code:
           type: string
           title: Application Code
@@ -500,45 +2674,200 @@ components:
           type: string
           title: Candidate Name
         position_id:
-          anyOf:
-          - type: string
-          - type: 'null'
+          type: string
           title: Position Id
         position_title:
           type: string
           title: Position Title
+        owner_id:
+          type: string
+          title: Owner Id
+        source_channel:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source Channel
         stage:
           $ref: '#/components/schemas/Stage'
+        outcome:
+          $ref: '#/components/schemas/Outcome'
+        custom_fields:
+          additionalProperties:
+            type: string
+            maxLength: 120
+            minLength: 1
+          propertyNames:
+            const: organization.referral_tag
+          type: object
+          title: Custom Fields
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - application_code
+      - candidate_id
+      - candidate_name
+      - position_id
+      - position_title
+      - owner_id
+      - source_channel
+      - stage
+      - outcome
+      - custom_fields
+      title: ApplicationRead
+    CandidateCreate:
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Display Name
+        owner_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Owner Id
+        custom_fields:
+          additionalProperties:
+            type: string
+            maxLength: 120
+            minLength: 1
+          propertyNames:
+            const: organization.referral_tag
+          type: object
+          title: Custom Fields
+      additionalProperties: false
+      type: object
+      required:
+      - display_name
+      title: CandidateCreate
+    CandidatePatch:
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Display Name
+        custom_fields:
+          anyOf:
+          - additionalProperties:
+              type: string
+              maxLength: 120
+              minLength: 1
+            propertyNames:
+              const: organization.referral_tag
+            type: object
+          - type: 'null'
+          title: Custom Fields
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: CandidatePatch
+    CandidateRead:
+      properties:
+        id:
+          type: string
+          title: Id
         version:
           type: integer
           minimum: 1.0
           title: Version
         created_at:
           type: string
+          format: date-time
           title: Created At
         updated_at:
           type: string
+          format: date-time
           title: Updated At
+        display_name:
+          type: string
+          title: Display Name
+        owner_id:
+          type: string
+          title: Owner Id
+        custom_fields:
+          additionalProperties:
+            type: string
+            maxLength: 120
+            minLength: 1
+          propertyNames:
+            const: organization.referral_tag
+          type: object
+          title: Custom Fields
       additionalProperties: false
       type: object
       required:
       - id
-      - application_code
-      - candidate_id
-      - candidate_name
-      - position_title
-      - stage
       - version
       - created_at
       - updated_at
-      title: ApplicationRead
+      - display_name
+      - owner_id
+      - custom_fields
+      title: CandidateRead
+    ConfirmationRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Id
+        reason:
+          type: string
+          title: Reason
+        proposed_json:
+          additionalProperties: true
+          type: object
+          title: Proposed Json
+        status:
+          type: string
+          title: Status
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - application_id
+      - reason
+      - proposed_json
+      - status
+      title: ConfirmationRead
     DashboardData:
       properties:
         new_applications:
           type: integer
           minimum: 0.0
           title: New Applications
-          description: S0 为申请总数，未实施日期筛选
         by_stage:
           additionalProperties:
             type: integer
@@ -562,6 +2891,37 @@ components:
       - by_stage
       - pending_sync
       title: DashboardData
+    DeleteRequest:
+      properties:
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: DeleteRequest
+    DeleteResult:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          title: Version
+        deleted_at:
+          type: string
+          format: date-time
+          title: Deleted At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - deleted_at
+      title: DeleteResult
     ErrorResponse:
       properties:
         error:
@@ -575,6 +2935,49 @@ components:
       - error
       - request_id
       title: ErrorResponse
+    EventRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Application Id
+        actor_id:
+          type: string
+          title: Actor Id
+        source:
+          type: string
+          title: Source
+        event_type:
+          type: string
+          title: Event Type
+        before_json:
+          additionalProperties: true
+          type: object
+          title: Before Json
+        after_json:
+          additionalProperties: true
+          type: object
+          title: After Json
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - application_id
+      - actor_id
+      - source
+      - event_type
+      - before_json
+      - after_json
+      - created_at
+      title: EventRead
     Health:
       properties:
         status:
@@ -594,6 +2997,25 @@ components:
       additionalProperties: false
       type: object
       title: Health
+    Identity:
+      properties:
+        user:
+          $ref: '#/components/schemas/UserRead'
+        mode:
+          type: string
+          const: mock
+          title: Mode
+          default: mock
+        authentication:
+          type: string
+          const: development_only
+          title: Authentication
+          default: development_only
+      additionalProperties: false
+      type: object
+      required:
+      - user
+      title: Identity
     IngestionRequest:
       properties:
         text:
@@ -651,6 +3073,11 @@ components:
           anyOf:
           - $ref: '#/components/schemas/ApplicationRead'
           - type: 'null'
+        confirmation_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Confirmation Id
         sync_state:
           anyOf:
           - type: string
@@ -692,6 +3119,139 @@ components:
       additionalProperties: false
       type: object
       title: IntegrationStatus
+    InterviewCreate:
+      properties:
+        round:
+          type: integer
+          maximum: 30.0
+          minimum: 1.0
+          title: Round
+        scheduled_at:
+          type: string
+          format: date-time
+          title: Scheduled At
+        interviewer:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Interviewer
+      additionalProperties: false
+      type: object
+      required:
+      - round
+      - scheduled_at
+      - interviewer
+      title: InterviewCreate
+    InterviewPatch:
+      properties:
+        scheduled_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Scheduled At
+        interviewer:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Interviewer
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - scheduled
+            - completed
+            - cancelled
+          - type: 'null'
+          title: Status
+        result:
+          anyOf:
+          - type: string
+            enum:
+            - pending
+            - passed
+            - failed
+            - cancelled
+          - type: 'null'
+          title: Result
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: InterviewPatch
+    InterviewRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        application_id:
+          type: string
+          title: Application Id
+        round:
+          type: integer
+          title: Round
+        scheduled_at:
+          type: string
+          format: date-time
+          title: Scheduled At
+        interviewer:
+          type: string
+          title: Interviewer
+        status:
+          type: string
+          enum:
+          - scheduled
+          - completed
+          - cancelled
+          title: Status
+        result:
+          type: string
+          enum:
+          - pending
+          - passed
+          - failed
+          - cancelled
+          title: Result
+        feedback_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Feedback At
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - application_id
+      - round
+      - scheduled_at
+      - interviewer
+      - status
+      - result
+      - feedback_at
+      title: InterviewRead
     ListResponse_ApplicationRead_:
       properties:
         data:
@@ -711,6 +3271,101 @@ components:
       - request_id
       - pagination
       title: ListResponse[ApplicationRead]
+    ListResponse_CandidateRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/CandidateRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[CandidateRead]
+    ListResponse_ConfirmationRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/ConfirmationRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[ConfirmationRead]
+    ListResponse_EventRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/EventRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[EventRead]
+    ListResponse_InterviewRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/InterviewRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[InterviewRead]
+    ListResponse_PositionRead_:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/PositionRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      - pagination
+      title: ListResponse[PositionRead]
     ListResponse_SyncJob_:
       properties:
         data:
@@ -730,6 +3385,14 @@ components:
       - request_id
       - pagination
       title: ListResponse[SyncJob]
+    Outcome:
+      type: string
+      enum:
+      - pending
+      - hired
+      - rejected
+      - withdrawn
+      title: Outcome
     Pagination:
       properties:
         page:
@@ -752,6 +3415,123 @@ components:
       - page_size
       - total
       title: Pagination
+    PositionCreate:
+      properties:
+        title:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Title
+        department:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Department
+        target_headcount:
+          type: integer
+          minimum: 0.0
+          title: Target Headcount
+          default: 0
+        owner_user_id:
+          anyOf:
+          - type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+          - type: 'null'
+          title: Owner User Id
+      additionalProperties: false
+      type: object
+      required:
+      - title
+      - department
+      title: PositionCreate
+    PositionPatch:
+      properties:
+        title:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Title
+        target_headcount:
+          anyOf:
+          - type: integer
+            minimum: 0.0
+          - type: 'null'
+          title: Target Headcount
+        active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Active
+        change_reason:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Change Reason
+      additionalProperties: false
+      type: object
+      required:
+      - change_reason
+      title: PositionPatch
+    PositionRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        title:
+          type: string
+          title: Title
+        department:
+          type: string
+          title: Department
+        target_headcount:
+          type: integer
+          title: Target Headcount
+        owner_user_id:
+          type: string
+          title: Owner User Id
+        active:
+          type: boolean
+          title: Active
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - title
+      - department
+      - target_headcount
+      - owner_user_id
+      - active
+      title: PositionRead
+    Response_ApplicationMutation_:
+      properties:
+        data:
+          $ref: '#/components/schemas/ApplicationMutation'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[ApplicationMutation]
     Response_ApplicationRead_:
       properties:
         data:
@@ -765,6 +3545,19 @@ components:
       - data
       - request_id
       title: Response[ApplicationRead]
+    Response_CandidateRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/CandidateRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[CandidateRead]
     Response_DashboardData_:
       properties:
         data:
@@ -778,6 +3571,19 @@ components:
       - data
       - request_id
       title: Response[DashboardData]
+    Response_DeleteResult_:
+      properties:
+        data:
+          $ref: '#/components/schemas/DeleteResult'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[DeleteResult]
     Response_Health_:
       properties:
         data:
@@ -791,6 +3597,19 @@ components:
       - data
       - request_id
       title: Response[Health]
+    Response_Identity_:
+      properties:
+        data:
+          $ref: '#/components/schemas/Identity'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[Identity]
     Response_IngestionResult_:
       properties:
         data:
@@ -817,6 +3636,32 @@ components:
       - data
       - request_id
       title: Response[IntegrationStatus]
+    Response_InterviewRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/InterviewRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[InterviewRead]
+    Response_PositionRead_:
+      properties:
+        data:
+          $ref: '#/components/schemas/PositionRead'
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[PositionRead]
     Response_SyncRun_:
       properties:
         data:
@@ -830,6 +3675,29 @@ components:
       - data
       - request_id
       title: Response[SyncRun]
+    Response_list_UserRead__:
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/UserRead'
+          type: array
+          title: Data
+        request_id:
+          type: string
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+      - data
+      - request_id
+      title: Response[list[UserRead]]
+    Role:
+      type: string
+      enum:
+      - HR
+      - MANAGER
+      - ADMIN
+      title: Role
     Stage:
       type: string
       enum:
@@ -847,8 +3715,16 @@ components:
         id:
           type: string
           title: Id
-        application_id:
+        entity_type:
           type: string
+          title: Entity Type
+        entity_id:
+          type: string
+          title: Entity Id
+        application_id:
+          anyOf:
+          - type: string
+          - type: 'null'
           title: Application Id
         version:
           type: integer
@@ -874,6 +3750,8 @@ components:
       type: object
       required:
       - id
+      - entity_type
+      - entity_id
       - application_id
       - version
       - status
@@ -904,5 +3782,50 @@ components:
       type: string
       enum:
       - pending
+      - processing
       - mock_synced
+      - synced
+      - failed
+      - dead
+      - superseded
       title: SyncState
+    UserRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        display_name:
+          type: string
+          title: Display Name
+        role:
+          $ref: '#/components/schemas/Role'
+        department:
+          type: string
+          title: Department
+        active:
+          type: boolean
+          title: Active
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - version
+      - created_at
+      - updated_at
+      - display_name
+      - role
+      - department
+      - active
+      title: UserRead

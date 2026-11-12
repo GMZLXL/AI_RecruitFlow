@@ -1,68 +1,71 @@
-"""S0 local Mock baseline. Full identity, CRUD and migrations follow in S1."""
+"""Local Mock API. S1 adds migrated domain entities and development RBAC."""
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Annotated, Literal, NoReturn
+from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, select, update
-from sqlalchemy.exc import IntegrityError
+from pydantic import AwareDatetime
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.exceptions import HTTPException
 
-from .db import Application, AuditLog, Candidate, Event, Outbox, RemoteLink, get_db, init_db, utcnow
-from .schemas import (
-    ApiError,
-    ApplicationCreate,
-    ApplicationRead,
-    DashboardData,
-    ErrorResponse,
-    Health,
-    IngestionRequest,
-    IngestionResult,
-    IntegrationStatus,
-    ListResponse,
-    Pagination,
-    Response,
-    Stage,
-    SyncJob,
-    SyncRun,
-    SyncState,
+from . import schemas as s
+from . import services as svc
+from .db import (
+    Application,
+    AuditLog,
+    Candidate,
+    Confirmation,
+    Event,
+    IngestionJob,
+    Interview,
+    Outbox,
+    Position,
+    RemoteLink,
+    User,
+    get_db,
+    init_db,
+    new_id,
 )
+from .domain import Role, Stage
+from .errors import BusinessError
+from .security import DEV_IDS, current_user, require_admin, require_writer, seed_dev_users
 
-if os.getenv("APP_MODE", "mock") != "mock" or os.getenv("APP_ENV", "development") != "development":
+if os.getenv("APP_ENV", "development") != "development" or os.getenv("APP_MODE", "mock") != "mock":
     raise RuntimeError(
-        "S0 only supports APP_ENV=development and APP_MODE=mock; production identity is not implemented."
+        "S1 only supports APP_ENV=development and APP_MODE=mock; production identity is not implemented"
     )
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
+    seed_dev_users()
     yield
 
 
 app = FastAPI(
     title="AI RecruitFlow Mock API",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
-    description="S0 local Mock baseline. No real DeepSeek/Tencent Docs/WeCom connections.",
-    responses={code: {"model": ErrorResponse} for code in (400, 403, 404, 409, 422, 500)},
+    description="S1 domain, migration and development RBAC. No real external connections.",
+    responses={code: {"model": s.ErrorResponse} for code in (400, 401, 403, 404, 409, 422, 500)},
 )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(","),
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Idempotency-Key"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "Idempotency-Key", "If-Match", "X-Dev-User"],
     expose_headers=["X-Request-ID"],
 )
 
@@ -76,8 +79,8 @@ async def request_context(request: Request, call_next):
 
 
 def error_response(request: Request, status: int, code: str, message: str, details: dict | None = None):
-    body = ErrorResponse(
-        error=ApiError(code=code, message=message, details=details or {}),
+    body = s.ErrorResponse(
+        error=s.ApiError(code=code, message=message, details=details or {}),
         request_id=request.state.request_id,
     )
     return JSONResponse(
@@ -85,281 +88,736 @@ def error_response(request: Request, status: int, code: str, message: str, detai
     )
 
 
-@app.exception_handler(Exception)
-async def internal_error(request: Request, _exc: Exception):
-    return error_response(request, 500, "INTERNAL_ERROR", "内部处理失败，请提供请求编号排查")
+@app.exception_handler(BusinessError)
+async def business_error(request: Request, exc: BusinessError):
+    return error_response(request, exc.status, exc.code, exc.message)
 
 
-@app.exception_handler(StarletteHTTPException)
-async def http_error(request: Request, exc: StarletteHTTPException):
-    if isinstance(exc, ApiException):
-        return error_response(request, exc.status_code, exc.api_error.code, exc.api_error.message)
+@app.exception_handler(HTTPException)
+async def http_error(request: Request, exc: HTTPException):
     return error_response(request, exc.status_code, "HTTP_ERROR", str(exc.detail))
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, exc: RequestValidationError):
-    # Never echo raw messages, candidate data or supplied secrets in error payloads.
     fields = [{"field": ".".join(map(str, item["loc"])), "type": item["type"]} for item in exc.errors()]
     return error_response(request, 422, "INVALID_INPUT", "请求字段不符合契约", {"fields": fields})
 
 
-class ApiException(HTTPException):
-    def __init__(self, status: int, code: str, message: str):
-        super().__init__(status_code=status, detail=message)
-        self.api_error = ApiError(code=code, message=message)
-
-
-def fail(status: int, code: str, message: str) -> NoReturn:
-    raise ApiException(status, code, message)
-
-
-def require_local_mock(request: Request) -> str:
-    """A fixed development actor, never a browser-supplied role. Replaced by S1 RBAC."""
-    if request.client is None or request.client.host not in {"127.0.0.1", "::1", "testclient"}:
-        fail(403, "FORBIDDEN", "S0 Mock 写操作仅允许本机访问")
-    return "local-mock"
+@app.exception_handler(Exception)
+async def internal_error(request: Request, _exc: Exception):
+    return error_response(request, 500, "INTERNAL_ERROR", "内部处理失败，请提供请求编号排查")
 
 
 DB = Annotated[Session, Depends(get_db)]
-LocalActor = Annotated[str, Depends(require_local_mock)]
+Actor = Annotated[User, Depends(current_user)]
+Key = Annotated[str | None, Header(alias="Idempotency-Key", min_length=1, max_length=150)]
+Version = Annotated[int, Header(alias="If-Match", ge=1)]
+Page = Annotated[int, Query(ge=1)]
+PageSize = Annotated[int, Query(ge=1, le=100)]
 
 
-def utc(value: datetime) -> datetime:
-    # SQLite strips tzinfo on read; all stored values originate from utcnow().
-    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+def envelope(request: Request, data):
+    return {"data": data, "request_id": request.state.request_id}
 
 
-def fmt(a: Application) -> ApplicationRead:
-    return ApplicationRead(
-        id=str(a.id),
-        application_code=a.code,
-        candidate_id=str(a.candidate_id),
-        candidate_name=a.candidate.name,
-        position_title=a.position,
-        stage=Stage(a.stage),
-        version=a.version,
-        created_at=utc(a.created_at),
-        updated_at=utc(a.updated_at),
-    )
+def listing(request: Request, db: Session, query, page: int, page_size: int, read):
+    total = db.scalar(select(func.count()).select_from(query.order_by(None).subquery())) or 0
+    rows = db.scalars(query.offset((page - 1) * page_size).limit(page_size)).all()
+    return {
+        **envelope(request, [read(row) for row in rows]),
+        "pagination": {"page": page, "page_size": page_size, "total": total},
+    }
 
 
-def record_change(db: Session, a: Application, action: str, actor: str, event_key: str | None = None):
-    db.add(Event(application_id=a.id, action=action, external_event_id=event_key))
-    db.add(Outbox(application_id=a.id, version=a.version))
-    db.add(
-        AuditLog(
-            actor_id=actor,
-            action=action,
-            target_id=str(a.id),
-            metadata_json={"version": a.version, "stage": a.stage},
-        )
-    )
-
-
-def new_app(db: Session, data: ApplicationCreate, actor: str, event_key: str | None = None):
-    a = Application(
-        code=data.application_code or "A" + uuid.uuid4().hex[:8].upper(),
-        position=data.position_title,
-        candidate=Candidate(name=data.candidate_name),
-    )
-    db.add(a)
-    db.flush()
-    record_change(db, a, "create_application", actor, event_key)
-    db.commit()
-    return fmt(a)
-
-
-@app.get("/api/v1/health", response_model=Response[Health])
+@app.get("/api/v1/health", response_model=s.Response[s.Health])
 def health(request: Request):
-    return Response(data=Health(), request_id=request.state.request_id)
+    return envelope(request, s.Health())
 
 
-@app.get("/api/v1/integrations/status", response_model=Response[IntegrationStatus])
-def integration_status(request: Request):
-    return Response(data=IntegrationStatus(), request_id=request.state.request_id)
+@app.get("/api/v1/ready", response_model=s.Response[s.Health])
+def ready(request: Request, db: DB, actor: Actor):
+    db.execute(select(1))
+    return envelope(request, s.Health(note="Database schema and connection ready"))
 
 
-@app.get("/api/v1/applications", response_model=ListResponse[ApplicationRead])
-def applications(
-    request: Request, db: DB, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)
-):
-    total = db.scalar(select(func.count(Application.id))) or 0
-    rows = db.scalars(
-        select(Application).order_by(Application.id.desc()).offset((page - 1) * page_size).limit(page_size)
-    )
-    return ListResponse(
-        data=[fmt(a) for a in rows],
-        pagination=Pagination(page=page, page_size=page_size, total=total),
-        request_id=request.state.request_id,
-    )
+@app.get("/api/v1/me", response_model=s.Response[s.Identity])
+def me(request: Request, actor: Actor):
+    return envelope(request, s.Identity(user=s.UserRead.model_validate(actor)))
 
 
-@app.post("/api/v1/applications", status_code=201, response_model=Response[ApplicationRead])
-def create_application(
+@app.get("/api/v1/dev/users", response_model=s.Response[list[s.UserRead]])
+def development_users(request: Request, db: DB, actor: Actor):
+    users = db.scalars(select(User).where(User.id.in_(DEV_IDS.values()), User.active.is_(True))).all()
+    return envelope(request, [s.UserRead.model_validate(user) for user in users])
+
+
+@app.get("/api/v1/integrations/status", response_model=s.Response[s.IntegrationStatus])
+def integration_status(request: Request, actor: Actor):
+    require_admin(actor)
+    return envelope(request, s.IntegrationStatus())
+
+
+@app.get("/api/v1/positions", response_model=s.ListResponse[s.PositionRead])
+def positions(
     request: Request,
-    data: ApplicationCreate,
     db: DB,
-    actor: LocalActor,
-    idempotency_key: Annotated[str | None, Header(min_length=1, max_length=120)] = None,
+    actor: Actor,
+    page: Page = 1,
+    page_size: PageSize = 20,
+    keyword: str | None = Query(None, max_length=120),
+    active: bool | None = None,
 ):
-    event_key = f"web-create:{idempotency_key}" if idempotency_key else None
-    if event_key:
-        existing = db.scalar(select(Event).where(Event.external_event_id == event_key))
-        if existing:
-            previous = db.get(Application, existing.application_id)
-            if (
-                previous is None
-                or previous.candidate.name != data.candidate_name
-                or previous.position != data.position_title
-                or (data.application_code and data.application_code != previous.code)
+    query = select(Position).where(svc.visibility(Position, actor))
+    if keyword:
+        query = query.where(Position.title.contains(keyword, autoescape=True))
+    if active is not None:
+        query = query.where(Position.active == active)
+    return listing(
+        request,
+        db,
+        query.order_by(Position.created_at.desc(), Position.id),
+        page,
+        page_size,
+        s.PositionRead.model_validate,
+    )
+
+
+@app.get("/api/v1/positions/{position_id}", response_model=s.Response[s.PositionRead])
+def position_detail(position_id: s.Id, request: Request, db: DB, actor: Actor):
+    return envelope(request, s.PositionRead.model_validate(svc.get_entity(db, Position, position_id, actor)))
+
+
+@app.post("/api/v1/positions", status_code=201, response_model=s.Response[s.PositionRead])
+def position_create(data: s.PositionCreate, request: Request, db: DB, actor: Actor, key: Key = None):
+    require_admin(actor)
+    result = svc.mutate(
+        db,
+        actor,
+        "create_position",
+        key,
+        data.model_dump(mode="json"),
+        lambda: s.PositionRead.model_validate(svc.create_position(db, actor, data)),
+    )
+    return envelope(request, result)
+
+
+@app.patch("/api/v1/positions/{position_id}", response_model=s.Response[s.PositionRead])
+def position_patch(
+    position_id: s.Id,
+    data: s.PositionPatch,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Position, position_id, actor, write=True)
+
+    def change():
+        svc.patch_entity(db, actor, obj, data, if_match)
+        if data.title is not None:
+            for application in db.scalars(
+                select(Application).where(Application.position_id == obj.id, Application.deleted_at.is_(None))
             ):
-                fail(409, "IDEMPOTENCY_CONFLICT", "相同幂等键不能用于不同请求")
-            return Response(data=fmt(previous), request_id=request.state.request_id)
-    try:
-        return Response(data=new_app(db, data, actor, event_key), request_id=request.state.request_id)
-    except IntegrityError:
-        db.rollback()
-        fail(409, "APPLICATION_CODE_EXISTS", "申请编号已存在")
+                svc.touch_application(db, actor, application)
+        return s.PositionRead.model_validate(obj)
 
-
-@app.post("/api/v1/ingestions", response_model=Response[IngestionResult])
-def ingestion(request: Request, req: IngestionRequest, db: DB, actor: LocalActor):
-    def result(status: Literal["applied", "needs_confirmation", "duplicate"], **kwargs):
-        return Response(data=IngestionResult(status=status, **kwargs), request_id=request.state.request_id)
-
-    event_key = f"{req.source}:{req.external_event_id}" if req.external_event_id else None
-    if event_key:
-        existing = db.scalar(select(Event).where(Event.external_event_id == event_key))
-        if existing:
-            return result("duplicate", application_id=str(existing.application_id), reason="已处理相同事件")
-    # Fail closed for unsupported compound instructions; S2 implements the full parser.
-    creating = re.fullmatch(r"(?:新增|添加)([^，,\s]{1,20})[，,\s]*(?:应聘|申请)([^，,\s]{2,40})", req.text)
-    if creating:
-        try:
-            a = new_app(
-                db,
-                ApplicationCreate(candidate_name=creating.group(1), position_title=creating.group(2)),
-                actor,
-                event_key,
-            )
-            return result(
-                "applied",
-                intent="create_application",
-                application_id=a.id,
-                application=a,
-                sync_state="pending",
-            )
-        except IntegrityError:
-            db.rollback()
-            return result("needs_confirmation", reason="事件或申请编号冲突，请检查后重试")
-    match = re.fullmatch(
-        r"(A[A-Z0-9_-]{3,39})\s*(一面通过|初试通过|二面通过|复试通过)", req.text, re.IGNORECASE
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "patch_position:" + position_id,
+            key,
+            {**data.model_dump(mode="json"), "version": if_match},
+            change,
+        ),
     )
-    if not match:
-        return result(
-            "needs_confirmation", reason="仅支持明确的新增格式或申请编号+面试通过；复合消息请待 S2 审核"
+
+
+@app.delete("/api/v1/positions/{position_id}", response_model=s.Response[s.DeleteResult])
+def position_delete(
+    position_id: s.Id,
+    data: s.DeleteRequest,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Position, position_id, actor, write=True, allow_deleted=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "delete_position:" + position_id,
+            key,
+            {**data.model_dump(), "version": if_match},
+            lambda: svc.soft_delete(db, actor, obj, if_match, data.change_reason),
+        ),
+    )
+
+
+@app.get("/api/v1/candidates", response_model=s.ListResponse[s.CandidateRead])
+def candidates(
+    request: Request,
+    db: DB,
+    actor: Actor,
+    page: Page = 1,
+    page_size: PageSize = 20,
+    keyword: str | None = Query(None, max_length=100),
+    owner_id: str | None = None,
+):
+    query = select(Candidate).where(svc.visibility(Candidate, actor))
+    if keyword:
+        query = query.where(Candidate.display_name.contains(keyword, autoescape=True))
+    if owner_id:
+        query = query.where(Candidate.owner_id == owner_id)
+    return listing(
+        request,
+        db,
+        query.order_by(Candidate.created_at.desc(), Candidate.id),
+        page,
+        page_size,
+        s.CandidateRead.model_validate,
+    )
+
+
+@app.get("/api/v1/candidates/{candidate_id}", response_model=s.Response[s.CandidateRead])
+def candidate_detail(candidate_id: s.Id, request: Request, db: DB, actor: Actor):
+    return envelope(
+        request, s.CandidateRead.model_validate(svc.get_entity(db, Candidate, candidate_id, actor))
+    )
+
+
+@app.post("/api/v1/candidates", status_code=201, response_model=s.Response[s.CandidateRead])
+def candidate_create(data: s.CandidateCreate, request: Request, db: DB, actor: Actor, key: Key = None):
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "create_candidate",
+            key,
+            data.model_dump(mode="json"),
+            lambda: s.CandidateRead.model_validate(svc.create_candidate(db, actor, data)),
+        ),
+    )
+
+
+@app.patch("/api/v1/candidates/{candidate_id}", response_model=s.Response[s.CandidateRead])
+def candidate_patch(
+    candidate_id: s.Id,
+    data: s.CandidatePatch,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Candidate, candidate_id, actor, write=True)
+
+    def change():
+        svc.patch_entity(db, actor, obj, data, if_match)
+        if data.display_name is not None:
+            for application in db.scalars(
+                select(Application).where(
+                    Application.candidate_id == obj.id, Application.deleted_at.is_(None)
+                )
+            ):
+                svc.touch_application(db, actor, application)
+        return s.CandidateRead.model_validate(obj)
+
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "patch_candidate:" + candidate_id,
+            key,
+            {**data.model_dump(mode="json"), "version": if_match},
+            change,
+        ),
+    )
+
+
+@app.delete("/api/v1/candidates/{candidate_id}", response_model=s.Response[s.DeleteResult])
+def candidate_delete(
+    candidate_id: s.Id,
+    data: s.DeleteRequest,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Candidate, candidate_id, actor, write=True, allow_deleted=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "delete_candidate:" + candidate_id,
+            key,
+            {**data.model_dump(), "version": if_match},
+            lambda: svc.soft_delete(db, actor, obj, if_match, data.change_reason),
+        ),
+    )
+
+
+@app.get("/api/v1/applications", response_model=s.ListResponse[s.ApplicationRead])
+def applications(
+    request: Request,
+    db: DB,
+    actor: Actor,
+    page: Page = 1,
+    page_size: PageSize = 20,
+    keyword: str | None = Query(None, max_length=120),
+    stage: Stage | None = None,
+    candidate_id: str | None = None,
+    position_id: str | None = None,
+    owner_id: str | None = None,
+    source_channel: str | None = None,
+    from_at: AwareDatetime | None = Query(None, alias="from"),
+    to: AwareDatetime | None = None,
+    sort: Literal["created_desc", "updated_desc", "code_asc"] = "created_desc",
+):
+    query = select(Application).where(svc.visibility(Application, actor))
+    if keyword:
+        query = query.where(
+            Application.application_code.contains(keyword, autoescape=True)
+            | Application.candidate.has(Candidate.display_name.contains(keyword, autoescape=True))
         )
-    target = db.scalar(select(Application).where(Application.code == match.group(1).upper()))
-    if target is None:
-        return result("needs_confirmation", reason="申请编号未找到")
-    stage = Stage.INTERVIEW_2 if match.group(2) in ("一面通过", "初试通过") else Stage.OFFER
-    if target.stage in ("hired", "rejected", "withdrawn") or (
-        target.stage == "offer" and stage == Stage.INTERVIEW_2
+    for column, value in (
+        (Application.stage, stage),
+        (Application.candidate_id, candidate_id),
+        (Application.position_id, position_id),
+        (Application.owner_id, owner_id),
+        (Application.source_channel, source_channel),
     ):
-        return result("needs_confirmation", reason="终态或阶段逆转必须人工确认")
-    # S0 preserves the demo shortcut from applied to interview_2; S1/S2 add full transitions/results.
-    if target.stage == stage:
-        return result("needs_confirmation", reason="申请已处于目标阶段；请核对是否重复或属于另一轮面试")
-    old_version = target.version
-    try:
-        changed = db.execute(
-            update(Application)
-            .where(Application.id == target.id, Application.version == old_version)
-            .values(stage=stage.value, version=old_version + 1, updated_at=utcnow())
-            .returning(Application.id)
-        ).scalar_one_or_none()
-        if changed is None:
-            db.rollback()
-            fail(409, "VERSION_CONFLICT", "记录已更新，请刷新后重试")
-        db.refresh(target)
-        record_change(db, target, f"update_stage:{stage.value}", actor, event_key)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        return result("needs_confirmation", reason="重复事件冲突，请重试以读取已有结果")
-    return result(
-        "applied",
-        intent="update_stage",
-        application_id=str(target.id),
-        application=fmt(target),
-        sync_state="pending",
+        if value is not None:
+            query = query.where(column == value)
+    if from_at is not None:
+        query = query.where(Application.created_at >= from_at)
+    if to is not None:
+        query = query.where(Application.created_at < to)
+    order = {
+        "created_desc": Application.created_at.desc(),
+        "updated_desc": Application.updated_at.desc(),
+        "code_asc": Application.application_code.asc(),
+    }[sort]
+    return listing(request, db, query.order_by(order, Application.id), page, page_size, svc.application_read)
+
+
+@app.get("/api/v1/applications/{application_id}", response_model=s.Response[s.ApplicationRead])
+def application_detail(application_id: s.Id, request: Request, db: DB, actor: Actor):
+    return envelope(request, svc.application_read(svc.get_entity(db, Application, application_id, actor)))
+
+
+@app.post("/api/v1/applications", status_code=201, response_model=s.Response[s.ApplicationRead])
+def create_application(request: Request, data: s.ApplicationCreate, db: DB, actor: Actor, key: Key = None):
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "create_application",
+            key,
+            data.model_dump(mode="json"),
+            lambda: svc.application_read(svc.create_application(db, actor, data)),
+        ),
     )
 
 
-@app.get("/api/v1/dashboard/overview", response_model=Response[DashboardData])
-def dashboard(request: Request, db: DB):
-    total = db.scalar(select(func.count(Application.id))) or 0
+@app.patch("/api/v1/applications/{application_id}", response_model=s.Response[s.ApplicationMutation])
+def application_patch(
+    application_id: s.Id,
+    data: s.ApplicationPatch,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Application, application_id, actor, write=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "patch_application:" + application_id,
+            key,
+            {**data.model_dump(mode="json"), "version": if_match},
+            lambda: svc.patch_application(db, actor, obj, data, if_match),
+        ),
+    )
+
+
+@app.delete("/api/v1/applications/{application_id}", response_model=s.Response[s.DeleteResult])
+def application_delete(
+    application_id: s.Id,
+    data: s.DeleteRequest,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Application, application_id, actor, write=True, allow_deleted=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "delete_application:" + application_id,
+            key,
+            {**data.model_dump(), "version": if_match},
+            lambda: svc.soft_delete(db, actor, obj, if_match, data.change_reason),
+        ),
+    )
+
+
+@app.get("/api/v1/applications/{application_id}/events", response_model=s.ListResponse[s.EventRead])
+def application_events(
+    application_id: s.Id, request: Request, db: DB, actor: Actor, page: Page = 1, page_size: PageSize = 20
+):
+    svc.get_entity(db, Application, application_id, actor)
+    return listing(
+        request,
+        db,
+        select(Event)
+        .where(Event.application_id == application_id)
+        .order_by(Event.created_at.desc(), Event.id),
+        page,
+        page_size,
+        s.EventRead.model_validate,
+    )
+
+
+@app.get("/api/v1/applications/{application_id}/interviews", response_model=s.ListResponse[s.InterviewRead])
+def interviews(
+    application_id: s.Id, request: Request, db: DB, actor: Actor, page: Page = 1, page_size: PageSize = 20
+):
+    svc.get_entity(db, Application, application_id, actor)
+    return listing(
+        request,
+        db,
+        select(Interview)
+        .where(Interview.application_id == application_id, Interview.deleted_at.is_(None))
+        .order_by(Interview.scheduled_at, Interview.id),
+        page,
+        page_size,
+        s.InterviewRead.model_validate,
+    )
+
+
+@app.post(
+    "/api/v1/applications/{application_id}/interviews",
+    status_code=201,
+    response_model=s.Response[s.InterviewRead],
+)
+def interview_create(
+    application_id: s.Id,
+    data: s.InterviewCreate,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = svc.get_entity(db, Application, application_id, actor, write=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "create_interview:" + application_id,
+            key,
+            {**data.model_dump(mode="json"), "version": if_match},
+            lambda: svc.create_interview(db, actor, obj, data, if_match),
+        ),
+    )
+
+
+def interview_and_application(db, interview_id, actor, *, write=False):
+    obj = db.get(Interview, interview_id)
+    if obj is None or obj.deleted_at is not None:
+        svc.fail(404, "NOT_FOUND", "面试不存在")
+    application = svc.get_entity(db, Application, obj.application_id, actor, write=write)
+    return obj, application
+
+
+@app.get("/api/v1/interviews/{interview_id}", response_model=s.Response[s.InterviewRead])
+def interview_detail(interview_id: s.Id, request: Request, db: DB, actor: Actor):
+    obj, _ = interview_and_application(db, interview_id, actor)
+    return envelope(request, s.InterviewRead.model_validate(obj))
+
+
+@app.patch("/api/v1/interviews/{interview_id}", response_model=s.Response[s.InterviewRead])
+def interview_patch(
+    interview_id: s.Id,
+    data: s.InterviewPatch,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj, application = interview_and_application(db, interview_id, actor, write=True)
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "patch_interview:" + interview_id,
+            key,
+            {**data.model_dump(mode="json"), "version": if_match},
+            lambda: svc.patch_interview(db, actor, obj, application, data, if_match),
+        ),
+    )
+
+
+@app.delete("/api/v1/interviews/{interview_id}", response_model=s.Response[s.DeleteResult])
+def interview_delete(
+    interview_id: s.Id,
+    data: s.DeleteRequest,
+    request: Request,
+    db: DB,
+    actor: Actor,
+    if_match: Version,
+    key: Key = None,
+):
+    obj = db.get(Interview, interview_id)
+    if obj is None:
+        svc.fail(404, "NOT_FOUND", "面试不存在")
+    application = svc.get_entity(db, Application, obj.application_id, actor, write=True)
+
+    def change():
+        result = svc.soft_delete(db, actor, obj, if_match, data.change_reason)
+        svc.touch_application(db, actor, application)
+        return result
+
+    return envelope(
+        request,
+        svc.mutate(
+            db,
+            actor,
+            "delete_interview:" + interview_id,
+            key,
+            {**data.model_dump(), "version": if_match},
+            change,
+        ),
+    )
+
+
+@app.get("/api/v1/confirmations", response_model=s.ListResponse[s.ConfirmationRead])
+def confirmations(request: Request, db: DB, actor: Actor, page: Page = 1, page_size: PageSize = 20):
+    return listing(
+        request,
+        db,
+        select(Confirmation)
+        .where(svc.visibility(Confirmation, actor))
+        .order_by(Confirmation.created_at.desc(), Confirmation.id),
+        page,
+        page_size,
+        s.ConfirmationRead.model_validate,
+    )
+
+
+@app.post("/api/v1/ingestions", response_model=s.Response[s.IngestionResult])
+def ingestion(request: Request, req: s.IngestionRequest, db: DB, actor: Actor):
+    require_writer(actor)
+    external_id = req.external_event_id or new_id()
+    message_hash = hashlib.sha256(req.text.encode()).hexdigest()
+    existing = db.scalar(
+        select(IngestionJob).where(
+            IngestionJob.source == req.source, IngestionJob.external_event_id == external_id
+        )
+    )
+    if existing:
+        if existing.actor_id != actor.id:
+            svc.fail(403, "FORBIDDEN", "不能重放其他用户接入的事件")
+        if existing.message_hash != message_hash:
+            svc.fail(409, "IDEMPOTENCY_CONFLICT", "相同事件ID不能用于不同消息")
+        previous = s.IngestionResult.model_validate(existing.extracted_json["result"])
+        if previous.application_id:
+            svc.get_entity(db, Application, previous.application_id, actor)
+        if previous.status == "applied":
+            previous.status = "duplicate"
+        return envelope(request, previous)
+    event_key = hashlib.sha256(f"{req.source}:{external_id}".encode()).hexdigest()
+    legacy_event = db.scalar(
+        select(Event).where(Event.external_event_key == event_key, Event.source == "legacy_s0")
+    )
+    if legacy_event and legacy_event.application_id:
+        previous_application = svc.get_entity(db, Application, legacy_event.application_id, actor)
+        return envelope(
+            request,
+            s.IngestionResult(
+                status="duplicate",
+                application_id=previous_application.id,
+                reason="已迁移的S0历史事件，不重复执行",
+            ),
+        )
+
+    def change():
+        job = IngestionJob(
+            actor_id=actor.id, source=req.source, external_event_id=external_id, message_hash=message_hash
+        )
+        db.add(job)
+        result = s.IngestionResult(
+            status="needs_confirmation",
+            reason="仅支持明确新增或当前面试阶段的唯一编号更新；完整Parser/审核在S2实施",
+        )
+        creating = re.fullmatch(
+            r"(?:新增|添加)([^，,\s]{1,20})[，,\s]*(?:应聘|申请)([^，,\s]{2,40})", req.text
+        )
+        match = re.fullmatch(
+            r"(A[A-Z0-9_-]{3,39})\s*(一面通过|初试通过|二面通过|复试通过)", req.text, re.IGNORECASE
+        )
+        if creating:
+            same_name = db.scalar(
+                select(Candidate.id).where(
+                    svc.visibility(Candidate, actor), Candidate.display_name == creating.group(1)
+                )
+            )
+            if same_name:
+                result.reason = "存在同名候选人，请使用候选人ID或待S2人工确认"
+            else:
+                obj = svc.create_application(
+                    db,
+                    actor,
+                    s.ApplicationCreate(candidate_name=creating.group(1), position_title=creating.group(2)),
+                    event_key,
+                    req.source,
+                )
+                result = s.IngestionResult(
+                    status="applied",
+                    intent="create_application",
+                    application_id=obj.id,
+                    application=svc.application_read(obj),
+                    sync_state="pending",
+                )
+        elif match:
+            target = db.scalar(
+                select(Application).where(
+                    Application.application_code == match.group(1).upper(), Application.deleted_at.is_(None)
+                )
+            )
+            if target is not None:
+                svc.get_entity(db, Application, target.id, actor, write=True)
+                first = match.group(2) in {"一面通过", "初试通过"}
+                expected_stage = Stage.INTERVIEW_1 if first else Stage.INTERVIEW_2
+                if target.stage == expected_stage:
+                    changed = svc.patch_application(
+                        db,
+                        actor,
+                        target,
+                        s.ApplicationPatch(
+                            stage=Stage.INTERVIEW_2 if first else Stage.OFFER,
+                            change_reason="Mock明确面试阶段更新",
+                        ),
+                        target.version,
+                        event_key,
+                        req.source,
+                    )
+                    result = s.IngestionResult(
+                        status="applied",
+                        intent="update_stage",
+                        application_id=target.id,
+                        application=changed.application,
+                        sync_state="pending",
+                    )
+                else:
+                    result.reason = "当前阶段与消息轮次不一致，不能跳阶段或逆转"
+        job.state = result.status
+        job.extracted_json = {"result": result.model_dump(mode="json")}
+        svc.record_change(db, job, actor, "ingest_" + result.status)
+        return result
+
+    result = svc.mutate(db, actor, "ingest:" + req.source, external_id, req.model_dump(mode="json"), change)
+    return envelope(request, result)
+
+
+@app.get("/api/v1/dashboard/overview", response_model=s.Response[s.DashboardData])
+def dashboard(request: Request, db: DB, actor: Actor):
+    scope = svc.visibility(Application, actor)
+    total = db.scalar(select(func.count(Application.id)).where(scope)) or 0
     stages = {
         Stage(stage): count
         for stage, count in db.execute(
-            select(Application.stage, func.count(Application.id)).group_by(Application.stage)
+            select(Application.stage, func.count(Application.id)).where(scope).group_by(Application.stage)
         )
     }
-    pending = db.scalar(select(func.count(Outbox.id)).where(Outbox.status == "pending")) or 0
-    return Response(
-        data=DashboardData(new_applications=total, by_stage=stages, pending_sync=pending),
-        request_id=request.state.request_id,
+    visible_ids = select(Application.id).where(scope)
+    jobs = select(func.count(Outbox.id)).where(Outbox.status == "pending")
+    if actor.role != Role.ADMIN:
+        jobs = jobs.where(Outbox.application_id.in_(visible_ids))
+    return envelope(
+        request, s.DashboardData(new_applications=total, by_stage=stages, pending_sync=db.scalar(jobs) or 0)
     )
 
 
-@app.get("/api/v1/sync/jobs", response_model=ListResponse[SyncJob])
-def sync_jobs(request: Request, db: DB, page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
-    total = db.scalar(select(func.count(Outbox.id))) or 0
-    jobs = db.scalars(
-        select(Outbox).order_by(Outbox.id.desc()).offset((page - 1) * page_size).limit(page_size)
-    )
-    rows = [
-        SyncJob(
-            id=str(j.id),
-            application_id=str(j.application_id),
-            version=j.version,
-            status=SyncState(j.status),
-            remote_record_id=j.remote_record_id,
-            attempts=j.attempts,
-        )
-        for j in jobs
-    ]
-    return ListResponse(
-        data=rows,
-        pagination=Pagination(page=page, page_size=page_size, total=total),
-        request_id=request.state.request_id,
+@app.get("/api/v1/sync/jobs", response_model=s.ListResponse[s.SyncJob])
+def sync_jobs(request: Request, db: DB, actor: Actor, page: Page = 1, page_size: PageSize = 20):
+    require_admin(actor)
+    return listing(
+        request,
+        db,
+        select(Outbox).order_by(Outbox.created_at.desc(), Outbox.id),
+        page,
+        page_size,
+        s.SyncJob.model_validate,
     )
 
 
-@app.post("/api/v1/sync/run", response_model=Response[SyncRun])
-def run_mock_sync(request: Request, db: DB, actor: LocalActor):
-    """Only local simulation. No network calls or real credentials."""
-    jobs = db.scalars(select(Outbox).where(Outbox.status == "pending").order_by(Outbox.id)).all()
-    for job in jobs:
-        link = db.scalar(select(RemoteLink).where(RemoteLink.application_id == job.application_id))
-        if link is None:
-            link = RemoteLink(
-                application_id=job.application_id, remote_record_id="MOCK-" + uuid.uuid4().hex[:8]
+@app.post("/api/v1/sync/run", response_model=s.Response[s.SyncRun])
+def run_mock_sync(request: Request, db: DB, actor: Actor, key: Key = None):
+    require_admin(actor)
+
+    def change():
+        jobs = db.scalars(
+            select(Outbox).where(Outbox.status == "pending").order_by(Outbox.created_at, Outbox.id)
+        ).all()
+        for job in jobs:
+            if job.entity_type == "applications":
+                link = db.scalar(
+                    select(RemoteLink).where(
+                        RemoteLink.entity_type == job.entity_type,
+                        RemoteLink.entity_id == job.entity_id,
+                        RemoteLink.provider == "mock",
+                    )
+                )
+                if link is None:
+                    link = RemoteLink(
+                        entity_type=job.entity_type,
+                        entity_id=job.entity_id,
+                        application_id=job.application_id,
+                        remote_record_id="MOCK-" + new_id()[:8],
+                        provider="mock",
+                        last_synced_version=0,
+                    )
+                    db.add(link)
+                    db.flush()
+                link.last_synced_version = max(link.last_synced_version, job.version)
+                job.remote_record_id = link.remote_record_id
+            job.status = "mock_synced"
+            job.attempts += 1
+            db.add(
+                AuditLog(
+                    actor_id=actor.id,
+                    action="mock_sync",
+                    target_type="sync_outbox",
+                    target_id=job.id,
+                    metadata_json={
+                        "version": job.version,
+                        "mode": "mock",
+                        "internal_only": job.entity_type != "applications",
+                    },
+                )
             )
-            db.add(link)
-            db.flush()
-        job.remote_record_id = link.remote_record_id
-        job.status = "mock_synced"
-        job.attempts += 1
-        db.add(
-            AuditLog(
-                actor_id=actor,
-                action="mock_sync",
-                target_type="sync_outbox",
-                target_id=str(job.id),
-                metadata_json={"version": job.version},
-            )
-        )
-    db.commit()
-    return Response(data=SyncRun(processed=len(jobs)), request_id=request.state.request_id)
+        return s.SyncRun(processed=len(jobs))
+
+    return envelope(request, svc.mutate(db, actor, "run_mock_sync", key, {}, change))
