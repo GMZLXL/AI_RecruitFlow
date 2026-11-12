@@ -1,5 +1,7 @@
 # 后端服务（开发 Mock）
 
+当前S7：206项后端回归、T01–T18矩阵及独立无Key HTTP演示，Windows/Linux CI与Linux容器运行均有实际证据；命令`npm run acceptance`、`npm run demo:isolated [-- --verify]`。没有新增API/迁移，schema保持0.7.0/0006_s6。真实三方与企业网关仍待授权。Python脚本统一用`-m scripts...`运行，避免直接执行smoke/http.py遮蔽标准库。详见docs/16，以下保留历史。
+
 当前S6：新增0006_s6、RS256网关Cookie/DB授权/CSRF、请求限流/安全日志、AI配置加密、任务领导租约/健康、操作员与SQLite备份恢复脚本。真实SSO网关和外部连接器未联调，完整live拒绝。安装最新requirements.lock并备份后迁移；202项后端回归通过。API/TS契约已同步，实际运行与生产前置条件见根README及docs/15，以下保留阶段历史。
 
 S5新增0005_s5、schemas/wecom、验签/AES适配器、持久接收与通知/提醒队列、配置与用户绑定API。SDK/密码库已锁定，安装requirements.lock后迁移；无Key保持Mock，真实企微未联调，生产身份仍待S6。`npm run smoke:wecom`验证后台闭环，不发送外部消息。

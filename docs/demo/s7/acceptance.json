@@ -1,0 +1,396 @@
+{
+  "created_at": "2026-11-12T19:02:44.55515+08:00",
+  "mode": "mock_and_synthetic_transports",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "contracts",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 4.05
+    },
+    {
+      "name": "lint",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 3.48
+    },
+    {
+      "name": "types",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 18.34
+    },
+    {
+      "name": "backend",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 33.67
+    },
+    {
+      "name": "frontend",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 31.2
+    },
+    {
+      "name": "build",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 18.59
+    },
+    {
+      "name": "isolated_mock_http",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 19.48
+    },
+    {
+      "name": "synthetic_sso_http",
+      "status": "passed",
+      "exit_code": 0,
+      "seconds": 5.47
+    }
+  ],
+  "tests": {
+    "passed": 226,
+    "failed": 0,
+    "skipped": 0
+  },
+  "matrix": [
+    {
+      "id": "T01",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_three_business_messages_and_no_invented_interview_plan",
+          "suite": "tests.integration.test_s2",
+          "status": "passed"
+        },
+        {
+          "name": "test_full_mock_flow",
+          "suite": "tests.integration.test_smoke",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T02",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_three_business_messages_and_no_invented_interview_plan",
+          "suite": "tests.integration.test_s2",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T03",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_mock_durable_ack_pipeline_dedup_and_minimal_notice",
+          "suite": "tests.integration.test_s5",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T04",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_name_conflict_confirm_select_replay_and_only_once",
+          "suite": "tests.integration.test_s2",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T05",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_one_candidate_two_positions_and_no_name_merge",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T06",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_terminal_reversal_persists_confirmation_without_changing_application",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T07",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_ambiguous_schedule_can_be_corrected_and_executed",
+          "suite": "tests.integration.test_s2",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T08",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_offer_decline_and_waiting_denominator",
+          "suite": "tests.integration.test_s4",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T09",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_model_failure_reaches_review_without_business_write[T09]",
+          "suite": "tests.integration.test_s7",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T10",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_model_failure_reaches_review_without_business_write[T10-model]",
+          "suite": "tests.integration.test_s7",
+          "status": "passed"
+        },
+        {
+          "name": "test_model_failure_reaches_review_without_business_write[T10-prompt]",
+          "suite": "tests.integration.test_s7",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T11",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_remote_failure_keeps_business_and_exponential_dead_letter",
+          "suite": "tests.integration.test_s3",
+          "status": "passed"
+        },
+        {
+          "name": "test_admin_retry_rbac_revision_idempotency_and_recovery",
+          "suite": "tests.integration.test_s3",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T12",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_remote_success_before_local_ack_is_idempotently_recovered",
+          "suite": "tests.integration.test_s3",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T13",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_optimistic_conflict_idempotent_replay_and_if_match_required",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T14",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_rbac_read_scopes[applications]",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        },
+        {
+          "name": "test_rbac_read_scopes[candidates]",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        },
+        {
+          "name": "test_rbac_read_scopes[positions]",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        },
+        {
+          "name": "test_rbac_read_scopes[sync/jobs]",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        },
+        {
+          "name": "test_rbac_read_scopes[integrations/status]",
+          "suite": "tests.integration.test_s1",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T15",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_T15_dashboard_matches_independent_sql_and_calendar",
+          "suite": "tests.integration.test_s7",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T16",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "看板与列表 > T16 空库候选人列表显示明确空态，不生成示例行",
+          "suite": "src/test/workbench.test.tsx",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T17",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_full_mock_flow",
+          "suite": "tests.integration.test_smoke",
+          "status": "passed"
+        },
+        {
+          "name": "test_missing_credentials_and_mock_mode_never_call_network",
+          "suite": "tests.unit.test_parsers",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    },
+    {
+      "id": "T18",
+      "status": "passed",
+      "evidence": [
+        {
+          "name": "test_unsafe_modes_refuse_startup[env0]",
+          "suite": "tests.integration.test_smoke",
+          "status": "passed"
+        },
+        {
+          "name": "test_unsafe_modes_refuse_startup[env1]",
+          "suite": "tests.integration.test_smoke",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[AUTH_MODE-dev]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[DEV_AUTH_ENABLED-true]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[RATE_LIMIT_ENABLED-false]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[SSO_AUDIENCE-]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[SESSION_CSRF_SECRET-short]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[SSO_PUBLIC_KEY_FILE-missing-file]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[APP_SECRET_KEY-bad-key]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[ALLOWED_ORIGINS-*]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[WECOM_SEND_ENABLED-true]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[MOCK_SHEET_FAILURE-timeout]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_production_configuration_fail_closed[DEV_PROXY_NETWORKS-172.30.123.0/24]",
+          "suite": "tests.integration.test_s6_operations",
+          "status": "passed"
+        },
+        {
+          "name": "test_tencent_config_never_silently_falls_back_or_claims_real_success[False]",
+          "suite": "tests.integration.test_s3",
+          "status": "passed"
+        },
+        {
+          "name": "test_tencent_config_never_silently_falls_back_or_claims_real_success[True]",
+          "suite": "tests.integration.test_s3",
+          "status": "passed"
+        }
+      ],
+      "missing": []
+    }
+  ],
+  "external_acceptance": {
+    "deepseek_live_and_accuracy": "not_executed_requires_authorization",
+    "tencent_mcp_write": "not_executed_requires_authorization",
+    "wecom_tenant": "not_executed_requires_authorization",
+    "enterprise_sso_tls": "not_executed_requires_authorization"
+  },
+  "docker_runtime": "not_executed_by_this_command",
+  "source_commit": "fe1df6f1afd306c182791ba0a4a64a4f398b7bad"
+}

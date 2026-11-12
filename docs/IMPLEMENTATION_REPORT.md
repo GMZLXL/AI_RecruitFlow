@@ -1,5 +1,57 @@
 # AI RecruitFlow 实施报告
 
+## S7 实际交付（2026-11-12）
+
+```text
+阶段：S7
+已完成：T01–T18逐项实际验收及JUnit矩阵；隔离无Key Mock演示；真实浏览器1440/1024/390完整录入/审核/同步/统计/越权链路；React19兼容缺陷修复；Windows/Linux CI全新安装与Linux Compose镜像构建/健康/Nginx代理HTTP；44秒关键帧录像及交付手册。
+本阶段变更文件：backend/tests/integration/test_s7及多岗状态断言、scripts/acceptance/{release,demo}、可配置URL的smoke脚本；前端空态/成功提示断言、Vite本机代理、React19官方补丁与依赖锁；.github/workflows/acceptance.yaml；README/状态/docs03/06/09/11/12/14/15/16、S7计划及docs/demo/s7证据。
+数据库迁移：无；业务契约保持OpenAPI0.7.0/41路径、DB head0006_s6；db:check无漂移。验收/演示均用新隔离SQLite，日常业务库与.env未被清空或覆盖。
+运行的命令：npm run acceptance（契约/lint/类型/pytest/Vitest/build/隔离HTTP/合成SSO）；demo:isolated及--verify；db:check/deploy:config、compileall、FFmpeg录像编码/ffprobe；GitHub CI实际从锁文件安装、docker compose config/up --build --wait及HTTP；下载并核对两平台JUnit汇总产物。
+测试结果：最终本机后端206通过（30.53s）、前端20通过/5文件（29.90s），失败0、跳过0；类型/lint/契约通过，build通过（12.29s）；T01–T18全部通过。最终Windows/Linux CI各226通过、0失败/跳过、18矩阵通过；Linux容器作业通过。结果限Mock/合成transport，非真实外部授权验收。
+未完成/阻塞：真实DeepSeek与60条标注/人工复核准确率评测、腾讯MCP授权Schema和写入、企微租户、企业SSO网关/TLS与生产覆盖运行；PostgreSQL/macOS未实机；AI周报/导入导出/自动归档等P1未交付。没有把这些列为通过。
+重要风险：单实例SQLite/单API进程内存限流，正式环境需匹配主密钥与恢复验收；保留Starlette测试客户端弃用、AntD静态消息不消费动态主题上下文和538.13KB主包提示。Mock通过不等于正式上线或95%模型准确率达标。
+下一阶段：S0–S7 Mock范围结束；按有效授权开展真实连接器、模型评测和目标环境验收，不虚构新阶段或自动启用live。
+```
+
+### 最终交付范围与统一结构
+
+候选人/多岗申请/面试/独立Offer、权限/版本/状态机/幂等、AI提议/人工审核、原子DB+审计+outbox、持久Mock映射/重试、数据库看板、企微Mock/SDK/提醒、管理员AI加密配置与安全运维均保留前阶段契约。S7没有新增业务字段或绕过后端规则，前后端继续使用同一生成数据结构。没有引入Redis/Celery或独立测试框架。
+
+新增release脚本调用现有Pytest/Vitest和静态检查，读取实际JUnit，将T01–T18映射到真实用例；找不到、失败或跳过均不能给通过。T09验证空模型响应两次后完整管线入审核且业务未改；T10分别验证输入在外呼前拦截、恶意模型字段/SQL/合成Key被结构拒绝；T15独立SQL与Python日历核对多角色、岗位、上海日期边界、去重人数、Offer和未来/过去面试；T05补独立状态断言，T16补实际组件空态及浏览器空库。不是用相同实现函数给自己算期望值。
+
+本轮新增4项后端、1项前端，最终206/20。首轮新增注入测试预期两次模型调用，实测为零次，原因是既有输入门禁提前拒绝；拆成输入注入与模型输出注入两种断言，保留安全检查并验证两条路径。未删除失败测试、隐藏警告或改成skip。
+
+### 实际CI、失败修复与可复现运行
+
+最终成功[Release acceptance运行43206404969](https://github.com/GMZLXL/AI_RecruitFlow/actions/runs/43206404969)验证提交`244d1369a5b4c7196a9dc2f06f4f074afd052799`，三作业均success：
+
+| 作业 | 实际结果 |
+|---|---|
+| Windows完整Mock验收 | 全新venv/哈希锁安装/npm ci；226通过、0失败、0跳过，矩阵18通过 |
+| Linux完整Mock验收 | 同上；226通过、0失败、0跳过，矩阵18通过 |
+| Linux Compose运行 | 两份配置解析；API/web镜像构建；服务健康；Nginx静态资源/安全header与代理业务链路；结束停止栈 |
+
+已下载两平台artifact核对result.json，而非只读取绿灯。CI元数据、矩阵、测试函数对应关系见[16号手册](16-S7验收与演示.md)和docs/demo/s7/{acceptance,ci-result}.json。详细JUnit产物14天保留，源SQLite、secret、日志不进Git。后续纯文档与演示证据提交按workflow的paths-ignore跳过同一代码重跑，已测试源码提交保持清晰。
+
+首轮CI两个平台完整验收均成功；容器已构建并健康，但HTTP步骤直接执行smoke/http.py遮蔽标准库http，导致httpx循环导入而失败，未将此算容器通过。修复为backend工作目录下`python -m scripts.smoke.http`，提交244d136后重新运行三作业全部成功。Docker运行并非在本机Windows假设完成，而是远端Linux真实执行；生产SSO覆盖仅config，不冒充真实TLS/租户验收。
+
+前端原React19/AntD5缺官方兼容补丁，组件运行出现兼容提示且页面使用静态message。按[Ant Design官方用法](https://github.com/ant-design/v5-patch-for-react-19#usage)加入固定1.0.3及主入口/测试加载，实际断言审核成功消息可见，兼容提示消失。浏览器仍记录静态message上下文开发提示，不改主题/页面设计或掩盖它。生产手册role示例从hr修正HR，并修复README尚未配置远程的历史说法。
+
+### 浏览器演示与录制
+
+`demo:isolated`在新的忽略目录创建独立空库、显式Mock环境与API/Web进程，可指定本机端口，Ctrl+C停止本轮两服务。`--verify`生成虚构样本并执行原http/workbench/wecom链路后退出，不触碰日常数据库。端口占用明确失败，不擅自杀进程。Vite代理覆盖只接本机HTTP origin且只在服务端读取，不把密钥/地址注入前端业务契约。
+
+本轮浏览器真实运行8037/5187，空库先显示0申请/0人/无反馈；从React输入“新增虚构S7演示甲应聘测试工程岗”，返回A75A93BFEF1F2。独立新事件推进筛选/一面、登记一面通过，再输入模糊二面时间进审核；390px补2026-11-13 15:00与虚构说明后执行。首次自动化日期填充未进入受控输入，页面正确阻断缺时点；改用原生日期输入后值保留且成功，未修改应用校验绕过。详情v5显示一面原计划未知/通过、二面未来计划/待反馈。同步中心显示同一MOCK远端映射，工作台实际变为1申请/1人/1待面试，Offer与录用0。HR乙直接访问该申请被后端拒绝，最后恢复管理员。
+
+1024页面client/scroll均1024，390审核均390，无页面横溢。保存13张实际关键帧及时间/URL操作清单，选其中11张桌面帧各4秒编码[44秒MP4](demo/s7/demo.mp4)，298667字节，已ffprobe与中间帧目视验证。它是实际操作的关键帧录像，不是连续实时录屏，也不是AI生成画面；手机审核和1024详情另存截图。没有对外发消息、填写真实Key或采集真实候选资料。完整复演步骤、未来时点替换要求及截图见docs/16。
+
+### 仍需授权的交付边界
+
+T01–T18通过范围是无KeyMock、合成模型transport与合成签名会话；腾讯仍须真实tools/list Schema和独立授权表查询→新增→更新→复查，DeepSeek须真实模型和60条标注/复核评测，企微须企业管理员/HTTPS回调/成员测试，SSO须受信网关与实际TLS/映射撤销验收。没有达到或声称已达到95%准确率、业务ROI、P95或全部PRD增强功能。P1周报/导入导出/自动归档、PostgreSQL实例与macOS仍未验收，不以文档或离线DDL代替实测。
+
+以下为S6及更早阶段历史记录。
+
 ## S6 实际交付（2026-11-12）
 
 ```text

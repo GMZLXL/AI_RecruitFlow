@@ -1,0 +1,85 @@
+{
+  "kind": "observed_ui_keyframes",
+  "note": "实际浏览器关键帧与操作记录；并非连续实时录屏。仅虚构资料，无外部模型/腾讯/企微调用。",
+  "application_code": "A75A93BFEF1F2",
+  "steps": [
+    {
+      "file": "01-empty.jpg",
+      "label": "新空库工作台：全部实际指标为0，接受率无反馈",
+      "at": "2026-11-12T11:00:21.256Z",
+      "url": "http://127.0.0.1:5187/dashboard"
+    },
+    {
+      "file": "02-candidates-empty.jpg",
+      "label": "候选人空态，没有生成示例申请",
+      "at": "2026-11-12T11:00:50.700Z",
+      "url": "http://127.0.0.1:5187/candidates"
+    },
+    {
+      "file": "03-ai-input.jpg",
+      "label": "在React输入一条明确新增消息",
+      "at": "2026-11-12T11:01:03.443Z",
+      "url": "http://127.0.0.1:5187/ai-inbox"
+    },
+    {
+      "file": "04-ai-created.jpg",
+      "label": "后端已保存候选人及申请，提交时的投影仍显示待同步",
+      "at": "2026-11-12T11:01:13.927Z",
+      "url": "http://127.0.0.1:5187/ai-inbox"
+    },
+    {
+      "file": "05-result.jpg",
+      "label": "按唯一编号登记一面通过，阶段进入二面",
+      "at": "2026-11-12T11:01:23.714Z",
+      "url": "http://127.0.0.1:5187/ai-inbox"
+    },
+    {
+      "file": "06-time-review.jpg",
+      "label": "模糊时间进入人工审核，未猜测具体钟点",
+      "at": "2026-11-12T11:01:35.397Z",
+      "url": "http://127.0.0.1:5187/ai-inbox"
+    },
+    {
+      "file": "07-mobile-review.jpg",
+      "label": "390px补齐具体时间与人工依据，审核按钮可用",
+      "at": "2026-11-12T11:02:20.577Z",
+      "url": "http://127.0.0.1:5187/ai-inbox"
+    },
+    {
+      "file": "08-detail-1024.jpg",
+      "label": "1024px申请详情：一面结果与二面计划分别记录",
+      "at": "2026-11-12T11:02:51.715Z",
+      "url": "http://127.0.0.1:5187/applications/5d0b16f9-d5f4-4aa8-940a-b213aa1ff5d0"
+    },
+    {
+      "file": "09-interviews.jpg",
+      "label": "一面通过没有伪造原计划；二面安排为明确未来时间",
+      "at": "2026-11-12T11:02:56.092Z",
+      "url": "http://127.0.0.1:5187/applications/5d0b16f9-d5f4-4aa8-940a-b213aa1ff5d0?tab=interviews"
+    },
+    {
+      "file": "10-sync.jpg",
+      "label": "异步投影显示Mock远端ID与模拟已同步，不冒充腾讯写入",
+      "at": "2026-11-12T11:03:52.116Z",
+      "url": "http://127.0.0.1:5187/sync"
+    },
+    {
+      "file": "11-dashboard.jpg",
+      "label": "工作台由0变为1条申请/1位候选人/1场待面试，全部来自该空库",
+      "at": "2026-11-12T11:04:19.071Z",
+      "url": "http://127.0.0.1:5187/dashboard"
+    },
+    {
+      "file": "12-permission.jpg",
+      "label": "模拟HR乙访问他人申请，后端拒绝",
+      "at": "2026-11-12T11:05:05.649Z",
+      "url": "http://127.0.0.1:5187/applications/5d0b16f9-d5f4-4aa8-940a-b213aa1ff5d0"
+    },
+    {
+      "file": "13-final.jpg",
+      "label": "恢复模拟管理员，完整Mock链路后的工作台",
+      "at": "2026-11-12T11:05:25.358Z",
+      "url": "http://127.0.0.1:5187/dashboard"
+    }
+  ]
+}

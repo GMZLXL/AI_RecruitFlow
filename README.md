@@ -2,7 +2,7 @@
 
 招聘记录自动化系统：React/TypeScript/Vite/Ant Design + FastAPI/Pydantic/SQLAlchemy。先运行不需要任何 Key 的 Mock，再按 S1~S7 完成业务和授权接入。
 
-**当前为 S6**：新增系统设置中的 AI Key/模型管理、后端加密存储、生产 SSO 会话校验与 CSRF、限流和安全日志、后台任务单实例租约、健康状态、Compose 与备份恢复工具。无Key默认Mock；真实 DeepSeek/MCP/企微及企业登录网关尚未联调，完整 live 模式仍拒绝启动。
+**当前为 S7，Mock交付验收通过**：T01–T18均有本轮执行证据，后端206项、前端20项通过；包含独立空库浏览器演示、Windows/Linux CI和Linux Compose构建/启动/代理HTTP验收。AI Key/模型可在管理员系统设置填写并后端加密。真实DeepSeek/MCP/企微与企业SSO/TLS仍待授权联调，完整live保持拒绝；不把Mock通过当作生产上线许可。
 
 ## 工作区
 
@@ -84,6 +84,9 @@ npm run smoke:security    # 隔离库/合成签名会话的生产模式Mock验�
 npm run deploy:config     # 官方Compose配置校验，需要Docker Compose或本机standalone
 npm run test:api          # pytest
 npm run test:web          # Vitest组件/路由/错误/日期测试
+npm run acceptance        # 完整检查+JUnit/T01–T18矩阵+独立Mock HTTP+合成SSO
+npm run demo:isolated     # 新空库、API8027/Web5177，Ctrl+C停止两服务，保留日常库
+npm run demo:isolated -- --verify # 独立虚构样本+三套HTTP冒烟，完成自动退出
 ```
 
 后端单独检查：进入`backend`并激活`.venv`后运行`python -m pytest -q`、`python -m compileall -q app`。前端单独运行`npm run typecheck --workspace frontend`、`npm run test:web`和`npm run build --workspace frontend`。根npm test运行后端及前端两套真实测试。
@@ -102,6 +105,8 @@ cd backend
 Unix改用`.venv/bin/python`。命令保留原库和备份，目标文件必须不存在；验证后在后端`.env`设置`DATABASE_URL=sqlite:///./recruitflow_s1.db`再启动。当前工作区已完成此升级并使用新库；原库仍在，未加入Git。旧记录统一归属模拟管理员，需在正式迁移前核对真实负责人；S1不接收真实个人资料。
 
 ## 当前验证边界
+
+S7不新增业务字段、API或迁移，契约保持0.7.0/41路径、DB head0006_s6。本机最终acceptance通过（206后端/20前端，失败0/跳过0）；补齐模型异常落地、恶意输出拒绝、独立SQL对账与空态。加入Ant Design官方React19兼容补丁，实测保存/审核消息可见。GitHub Actions从锁文件全新安装，Windows/Linux完整Mock检查及Linux容器链路已执行；具体运行链接、矩阵与44秒关键帧录像见[验收与演示](docs/16-S7验收与演示.md)。PostgreSQL、macOS及真实企业连接器仍未实机验收；保留Starlette弃用、AntD静态消息上下文提示和538.13KB主包警告。以下为阶段历史。
 
 S6 当前契约为 OpenAPI 0.7.0 / 41 路径，迁移 `0006_s6`。完整检查：后端202、前端19项通过，失败0、跳过0；类型、lint、契约与构建通过。生产模式合成SSO的HTTP检查、现有Mock/企微HTTP链路通过；实际SQLite在线备份与新文件恢复校验通过。两套Compose配置已由官方Compose校验，但本机无Docker Engine，未构建镜像或启动容器；真实企业网关/TLS、PostgreSQL、Linux/macOS未实机验收。保留测试客户端弃用及537.92KB主包警告。以下S5及更早数据为历史记录。
 
@@ -125,7 +130,7 @@ Mock支持明确新增、唯一编号的阶段/面试结果、ISO时间及“明
 
 业务写入必需`Idempotency-Key`，修改/删除另需`If-Match`；AI接入使用外部事件ID。开发身份由服务端目录解析`X-Dev-User`，可用别名admin/hr-a/hr-b/manager-a；`DEV_AUTH_ENABLED=false`拒绝开发身份。浏览器只保存模拟用户ID，不保存Token，也不能自报role提升权限。
 
-已初始化本地Git仓库，使用main分支，尚未配置远程仓库。`.env`、数据库、日志、本地工具、个人资料不得纳入版本控制。
+Git仓库使用main分支，远程为[GMZLXL/AI_RecruitFlow](https://github.com/GMZLXL/AI_RecruitFlow)，按用户要求公开。`.env`、数据库、日志、本地工具、个人资料不得纳入版本控制；演示截图/录像仅含明确虚构数据。
 
 ## S5 企业微信与提醒
 
